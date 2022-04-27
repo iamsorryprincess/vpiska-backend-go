@@ -8,4 +8,5 @@ var (
 	NameAndPhoneAlreadyUse = errors.New("name and phone already use")
 	UserNotFound           = errors.New("user not found")
 	InvalidPassword        = errors.New("invalid password")
+	InternalError          = errors.New("internal error")
 )

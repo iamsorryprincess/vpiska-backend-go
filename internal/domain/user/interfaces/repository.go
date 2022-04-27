@@ -1,12 +1,16 @@
 package interfaces
 
-import "github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user/models"
+import (
+	"context"
+
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user/models"
+)
 
 type Repository interface {
-	Insert(user *models.User)
-	GetByID(id string) (*models.User, error)
-	GetByPhone(phone string) (*models.User, error)
-	ChangePassword(id string, password string) error
-	Update(id string, name string, phone string, imageID string) error
-	CheckNameAndPhone(name string, phone string) error
+	Insert(ctx context.Context, user *models.User) error
+	GetByID(ctx context.Context, id string) (*models.User, error)
+	GetByPhone(ctx context.Context, phone string) (*models.User, error)
+	ChangePassword(ctx context.Context, id string, password string) error
+	Update(ctx context.Context, id string, name string, phone string, imageID string) error
+	CheckNameAndPhone(ctx context.Context, name string, phone string) error
 }

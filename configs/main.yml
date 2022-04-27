@@ -1,0 +1,7 @@
+server:
+  host: "localhost"
+  port: 5000
+
+database:
+  connectionString: "mongodb://localhost:27017"
+  dbName: "vpiska"

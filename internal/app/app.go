@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -12,7 +13,23 @@ import (
 )
 
 func Run() {
-	userRepository := database.InitUserRepository()
+	configuration, configErr := parseConfig()
+
+	if configErr != nil {
+		log.Fatal(configErr)
+		return
+	}
+
+	userRepository, repoError := database.InitUserRepository(
+		configuration.Database.ConnectionString,
+		configuration.Database.DbName,
+		"users")
+
+	if repoError != nil {
+		log.Fatal(repoError)
+		return
+	}
+
 	passwordHashProvider := identity.InitPasswordHashProvider()
 	jwtIdentityProvider := identity.InitJwtIdentityProvider()
 	createUserHandler := commands.InitCreateUserHandler(userRepository, passwordHashProvider, jwtIdentityProvider)
@@ -23,7 +40,7 @@ func Run() {
 	r.Use(gin.Recovery())
 	r.Use(gin.Logger())
 	v1.InitV1ApiHandlers(r, handler)
-	err := http.ListenAndServe("localhost:5000", r)
+	err := http.ListenAndServe(fmt.Sprintf("%s:%d", configuration.Server.Host, configuration.Server.Port), r)
 	if err != nil {
 		log.Fatal(err)
 	}

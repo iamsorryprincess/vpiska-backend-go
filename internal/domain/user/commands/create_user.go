@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"context"
+
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user/interfaces"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user/models"
 )
@@ -29,22 +31,25 @@ func InitCreateUserHandler(
 	}
 }
 
-func (h CreateUserHandler) Handle(command *CreateUserCommand) (*models.UserResponse, error) {
-	checkError := h.repository.CheckNameAndPhone(command.Name, command.Phone)
+func (h *CreateUserHandler) Handle(ctx context.Context, command *CreateUserCommand) (*models.UserResponse, error) {
+	checkError := h.repository.CheckNameAndPhone(ctx, command.Name, command.Phone)
 
 	if checkError != nil {
 		return nil, checkError
 	}
 
 	user := &models.User{
-		ID:        "",
 		Name:      command.Name,
 		PhoneCode: "+7",
 		Phone:     command.Phone,
 		Password:  h.passwordProvider.HashPassword(command.Password),
 	}
 
-	h.repository.Insert(user)
+	insertError := h.repository.Insert(ctx, user)
+
+	if insertError != nil {
+		return nil, insertError
+	}
 
 	return &models.UserResponse{
 		ID:          user.ID,

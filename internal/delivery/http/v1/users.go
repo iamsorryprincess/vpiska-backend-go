@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user/commands"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user/errors"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user/models"
 )
 
@@ -34,13 +35,21 @@ func createUserHandler(commandHandler *commands.CreateUserHandler) gin.HandlerFu
 			context.Writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
-		result, err := commandHandler.Handle(command)
+		
+		result, err := commandHandler.Handle(context.Request.Context(), command)
 
 		if err != nil {
-			response := createErrorResponse[models.UserResponse](err)
-			context.JSON(http.StatusOK, response)
-			return
+			switch err {
+			case errors.NameAlreadyUse, errors.PhoneAlreadyUse, errors.NameAndPhoneAlreadyUse:
+				response := createErrorResponse[models.UserResponse](err)
+				context.JSON(http.StatusOK, response)
+				return
+			default:
+				response := createErrorResponse[models.UserResponse](errors.InternalError)
+				fmt.Println(err)
+				context.JSON(http.StatusOK, response)
+				return
+			}
 		}
 
 		response := createSuccessResponse(result)

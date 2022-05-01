@@ -1,58 +1,57 @@
 package v1
 
 import (
-	"fmt"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user/commands"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user/errors"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user/models"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
 )
 
-type UsersHandler struct {
-	createCommandHandler *commands.CreateUserHandler
+type CreateUserRequest struct {
+	Name            string
+	Phone           string
+	Password        string
+	ConfirmPassword string
 }
 
-func InitUsersHandler(createUserHandler *commands.CreateUserHandler) *UsersHandler {
-	return &UsersHandler{
-		createCommandHandler: createUserHandler,
+func CreateUserHandler(userService *service.UserService) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		data, isParsed := parseRequest(writer, request, http.MethodPost, contentTypeJSON)
+
+		if !isParsed {
+			return
+		}
+
+		reqBody := &CreateUserRequest{}
+
+		if valid := deserializeAndValidateRequest(writer, data, reqBody); !valid {
+			return
+		}
+
+		response, domainError := userService.Create(request.Context(), reqBody.Name, reqBody.Phone, reqBody.Password)
+		writeResponse(writer, response, domainError)
 	}
 }
 
-func InitV1UsersHandler(group *gin.RouterGroup, usersHandler *UsersHandler) {
-	v1 := group.Group("/users")
-	v1.POST("/create", createUserHandler(usersHandler.createCommandHandler))
+type LoginUserRequest struct {
+	Phone    string
+	Password string
 }
 
-func createUserHandler(commandHandler *commands.CreateUserHandler) gin.HandlerFunc {
-	return func(context *gin.Context) {
-		command := &commands.CreateUserCommand{}
-		parseError := context.BindJSON(command)
+func LoginUserHandler(userService *service.UserService) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		data, isParsed := parseRequest(writer, request, http.MethodPost, contentTypeJSON)
 
-		if parseError != nil {
-			fmt.Println(parseError)
-			context.Writer.WriteHeader(http.StatusInternalServerError)
+		if !isParsed {
 			return
 		}
-		
-		result, err := commandHandler.Handle(context.Request.Context(), command)
 
-		if err != nil {
-			switch err {
-			case errors.NameAlreadyUse, errors.PhoneAlreadyUse, errors.NameAndPhoneAlreadyUse:
-				response := createErrorResponse[models.UserResponse](err)
-				context.JSON(http.StatusOK, response)
-				return
-			default:
-				response := createErrorResponse[models.UserResponse](errors.InternalError)
-				fmt.Println(err)
-				context.JSON(http.StatusOK, response)
-				return
-			}
+		reqBody := &LoginUserRequest{}
+
+		if valid := deserializeAndValidateRequest(writer, data, reqBody); !valid {
+			return
 		}
 
-		response := createSuccessResponse(result)
-		context.JSON(http.StatusOK, response)
+		response, domainError := userService.Login(request.Context(), reqBody.Phone, reqBody.Password)
+		writeResponse(writer, response, domainError)
 	}
 }

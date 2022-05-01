@@ -5,42 +5,38 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/database"
 	v1 "github.com/iamsorryprincess/vpiska-backend-go/internal/delivery/http/v1"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user/commands"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/infrastructure/database"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/infrastructure/identity"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/identity"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
 )
 
 func Run() {
-	configuration, configErr := parseConfig()
+	configuration, configError := parseConfig()
 
-	if configErr != nil {
-		log.Fatal(configErr)
+	if configError != nil {
+		log.Fatal(configError)
 		return
 	}
 
-	userRepository, repoError := database.InitUserRepository(
+	userRepository, userRepoErr := database.InitUserRepository(
 		configuration.Database.ConnectionString,
 		configuration.Database.DbName,
 		"users")
 
-	if repoError != nil {
-		log.Fatal(repoError)
+	if userRepoErr != nil {
+		log.Fatal(userRepoErr)
 		return
 	}
 
-	passwordHashProvider := identity.InitPasswordHashProvider()
-	jwtIdentityProvider := identity.InitJwtIdentityProvider()
-	createUserHandler := commands.InitCreateUserHandler(userRepository, passwordHashProvider, jwtIdentityProvider)
-	usersHandler := v1.InitUsersHandler(createUserHandler)
-	handler := v1.InitHandler(usersHandler)
+	securityProvider := identity.InitPasswordHashProvider()
+	identityProvider := identity.InitJwtTokenProvider()
+	userService := service.InitUserService(userRepository, securityProvider, identityProvider)
 
-	r := gin.Default()
-	r.Use(gin.Recovery())
-	r.Use(gin.Logger())
-	v1.InitV1ApiHandlers(r, handler)
-	err := http.ListenAndServe(fmt.Sprintf("%s:%d", configuration.Server.Host, configuration.Server.Port), r)
+	http.Handle("/api/v1/users/create", v1.CreateUserHandler(userService))
+	http.Handle("/api/v1/users/login", v1.LoginUserHandler(userService))
+
+	err := http.ListenAndServe(fmt.Sprintf("%s:%d", configuration.Server.Host, configuration.Server.Port), nil)
 	if err != nil {
 		log.Fatal(err)
 	}

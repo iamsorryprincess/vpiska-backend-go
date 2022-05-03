@@ -5,7 +5,7 @@ import "github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user"
 type JwtTokenProvider struct {
 }
 
-func InitJwtTokenProvider() user.IdentityProvider {
+func NewJwtTokenProvider() user.IdentityProvider {
 	return &JwtTokenProvider{}
 }
 

@@ -12,7 +12,7 @@ type UserService struct {
 	identity   user.IdentityProvider
 }
 
-func InitUserService(
+func NewUserService(
 	repository user.Repository,
 	security user.SecurityProvider,
 	identity user.IdentityProvider) *UserService {
@@ -61,6 +61,26 @@ func (s *UserService) Login(ctx context.Context, phone string, password string) 
 
 	if !s.security.VerifyHashedPassword(model.Password, password) {
 		return nil, user.InvalidPassword
+	}
+
+	return &user.LoginResponse{
+		ID:          model.ID,
+		Name:        model.Name,
+		Phone:       model.Phone,
+		ImageID:     model.ImageID,
+		AccessToken: s.identity.GetAccessToken(model),
+	}, nil
+}
+
+func (s *UserService) ChangePassword(ctx context.Context, id string, password string) (*user.LoginResponse, error) {
+	model, findErr := s.repository.GetUserByID(ctx, id)
+
+	if findErr != nil {
+		return nil, user.MapError(findErr)
+	}
+
+	if updateErr := s.repository.ChangePassword(ctx, id, s.security.HashPassword(password)); updateErr != nil {
+		return nil, user.MapError(updateErr)
 	}
 
 	return &user.LoginResponse{

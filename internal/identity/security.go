@@ -5,7 +5,7 @@ import "github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user"
 type PasswordHashProvider struct {
 }
 
-func InitPasswordHashProvider() user.SecurityProvider {
+func NewPasswordHashProvider() user.SecurityProvider {
 	return &PasswordHashProvider{}
 }
 

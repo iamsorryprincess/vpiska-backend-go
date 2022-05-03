@@ -11,11 +11,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type UserRepository struct {
+type userRepository struct {
 	db *mongo.Collection
 }
 
-func InitUserRepository(connectionString string, dbName string, collectionName string) (user.Repository, error) {
+func NewUserRepository(connectionString string, dbName string, collectionName string) (user.Repository, error) {
 	client, err := mongo.NewClient(options.Client().ApplyURI(connectionString))
 
 	if err != nil {
@@ -32,7 +32,7 @@ func InitUserRepository(connectionString string, dbName string, collectionName s
 	db := client.Database(dbName)
 	collection := db.Collection(collectionName)
 
-	return &UserRepository{
+	return &userRepository{
 		db: collection,
 	}, nil
 }
@@ -42,7 +42,7 @@ type groupingResult struct {
 	Phone string `bson:"phone"`
 }
 
-func (r *UserRepository) CheckNameAndPhone(ctx context.Context, name string, phone string) error {
+func (r *userRepository) CheckNameAndPhone(ctx context.Context, name string, phone string) error {
 	or := bson.D{{"$or", bson.A{
 		bson.D{{"name", name}},
 		bson.D{{"phone", phone}},
@@ -82,7 +82,7 @@ func (r *UserRepository) CheckNameAndPhone(ctx context.Context, name string, pho
 	return user.NameAlreadyUse
 }
 
-func (r *UserRepository) CreateUser(ctx context.Context, user *user.User) error {
+func (r *userRepository) CreateUser(ctx context.Context, user *user.User) error {
 	user.ID = primitive.NewObjectID().Hex()
 	_, err := r.db.InsertOne(ctx, user)
 
@@ -93,25 +93,36 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *user.User) error 
 	return nil
 }
 
-func (r *UserRepository) GetUserByID(ctx context.Context, id string) (*user.User, error) {
+func (r *userRepository) GetUserByID(ctx context.Context, id string) (*user.User, error) {
 	find := bson.D{{"_id", id}}
-	model := &user.User{}
-
-	if err := r.db.FindOne(ctx, find).Decode(&model); err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, user.NotFound
-		}
-		return nil, err
-	}
-
-	return model, nil
+	return getUserByFilter(ctx, r.db, find)
 }
 
-func (r *UserRepository) GetUserByPhone(ctx context.Context, phone string) (*user.User, error) {
+func (r *userRepository) GetUserByPhone(ctx context.Context, phone string) (*user.User, error) {
 	find := bson.D{{"phone", phone}}
+	return getUserByFilter(ctx, r.db, find)
+}
+
+func (r *userRepository) ChangePassword(ctx context.Context, id string, password string) error {
+	filter := bson.D{{"_id", id}}
+	update := bson.D{{"$set", bson.D{{"password", password}}}}
+	result, err := r.db.UpdateOne(ctx, filter, update)
+
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return user.NotFound
+	}
+
+	return nil
+}
+
+func getUserByFilter(ctx context.Context, db *mongo.Collection, filter bson.D) (*user.User, error) {
 	model := &user.User{}
 
-	if err := r.db.FindOne(ctx, find).Decode(&model); err != nil {
+	if err := db.FindOne(ctx, filter).Decode(&model); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, user.NotFound
 		}

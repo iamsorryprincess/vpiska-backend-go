@@ -2,46 +2,128 @@ package v1
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 )
 
 const contentTypeJSON = "application/json"
 
-func parseRequest(writer http.ResponseWriter, request *http.Request, method string, contentType string) ([]byte, bool) {
+var (
+	invalidMethodError      = errors.New("invalid method")
+	invalidContentTypeError = errors.New("invalid Content-Type")
+	validationError         = errors.New("invalid request")
+)
+
+func parseRequest(writer http.ResponseWriter, request *http.Request, method string, contentType string) ([]byte, error) {
 	if request.Method != method {
 		writer.WriteHeader(http.StatusMethodNotAllowed)
-		return nil, false
+		return nil, invalidMethodError
 	}
 
 	if request.Header.Get("Content-Type") != contentType {
 		writer.WriteHeader(http.StatusUnsupportedMediaType)
-		return nil, false
+		return nil, invalidContentTypeError
 	}
 
 	data, readErr := ioutil.ReadAll(request.Body)
 	defer request.Body.Close()
 
 	if readErr != nil {
-		panic(readErr)
+		writer.WriteHeader(http.StatusInternalServerError)
+		return nil, readErr
 	}
 
-	return data, true
+	return data, nil
 }
 
-func deserializeAndValidateRequest(writer http.ResponseWriter, data []byte, reqBody Validated) bool {
+func validateRequest(writer http.ResponseWriter, request Validated) error {
+	validationErrors, err := request.Validate()
+
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		return err
+	}
+
+	if validationErrors != nil {
+		errorResponse := createValidationErrorResponse(validationErrors)
+		bytes, marshalErr := json.Marshal(errorResponse)
+
+		if marshalErr != nil {
+			writer.WriteHeader(http.StatusInternalServerError)
+			return marshalErr
+		}
+
+		writer.Header().Set("Content-Type", contentTypeJSON)
+		writer.WriteHeader(http.StatusOK)
+		_, writeErr := writer.Write(bytes)
+
+		if writeErr != nil {
+			writer.WriteHeader(http.StatusInternalServerError)
+			return writeErr
+		}
+
+		return validationError
+	}
+
+	return nil
+}
+
+func deserializeAndValidateRequest(writer http.ResponseWriter, data []byte, reqBody Validated) error {
 	if unMarshalErr := json.Unmarshal(data, reqBody); unMarshalErr != nil {
-		panic(unMarshalErr)
+		writer.WriteHeader(http.StatusInternalServerError)
+		return unMarshalErr
 	}
 
 	return validateRequest(writer, reqBody)
 }
 
+func writeDomainErrorResponse(writer http.ResponseWriter, domainError error) error {
+	errorResponse := createDomainErrorResponse(domainError)
+	bytes, marshalErr := json.Marshal(errorResponse)
+
+	if marshalErr != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		return marshalErr
+	}
+
+	writer.Header().Set("Content-Type", contentTypeJSON)
+	writer.WriteHeader(http.StatusOK)
+	_, writeErr := writer.Write(bytes)
+
+	if writeErr != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		return writeErr
+	}
+
+	return nil
+}
+
+func writeSuccessResponse(writer http.ResponseWriter, response interface{}) error {
+	bytes, marshalErr := json.Marshal(createSuccessResponse(response))
+
+	if marshalErr != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		return marshalErr
+	}
+
+	writer.Header().Set("Content-Type", contentTypeJSON)
+	writer.WriteHeader(http.StatusOK)
+	_, writeErr := writer.Write(bytes)
+
+	if writeErr != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		return writeErr
+	}
+
+	return nil
+}
+
 func writeResponse(writer http.ResponseWriter, response interface{}, domainError error) {
 	if domainError != nil {
-		writeDomainErrorResponse(writer, domainError)
+		_ = writeDomainErrorResponse(writer, domainError)
 		return
 	}
 
-	writeSuccessResponse(writer, response)
+	_ = writeSuccessResponse(writer, response)
 }

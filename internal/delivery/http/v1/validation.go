@@ -1,8 +1,6 @@
 package v1
 
 import (
-	"encoding/json"
-	"net/http"
 	"regexp"
 )
 
@@ -16,40 +14,16 @@ const (
 	emptyNameError              = "NameIsEmpty"
 	emptyPhoneError             = "PhoneIsEmpty"
 	emptyPasswordError          = "PasswordIsEmpty"
-	invalidIDFormatError        = "IdInvalidFormat"
 	invalidPhoneFormatError     = "PhoneRegexInvalid"
 	invalidPasswordLengthError  = "PasswordLengthInvalid"
 	invalidConfirmPasswordError = "ConfirmPasswordInvalid"
 )
 
 type Validated interface {
-	Validate() []string
+	Validate() ([]string, error)
 }
 
-func validateRequest(writer http.ResponseWriter, request Validated) bool {
-	if validationErrors := request.Validate(); validationErrors != nil {
-		errorResponse := createValidationErrorResponse(validationErrors)
-		bytes, marshalErr := json.Marshal(errorResponse)
-
-		if marshalErr != nil {
-			panic(marshalErr)
-		}
-
-		writer.Header().Set("Content-Type", contentTypeJSON)
-		writer.WriteHeader(http.StatusOK)
-		_, writeErr := writer.Write(bytes)
-
-		if writeErr != nil {
-			panic(writeErr)
-		}
-
-		return false
-	}
-
-	return true
-}
-
-func (request *CreateUserRequest) Validate() []string {
+func (request *CreateUserRequest) Validate() ([]string, error) {
 	var validationErrors []string
 
 	if request.Name == "" {
@@ -59,7 +33,7 @@ func (request *CreateUserRequest) Validate() []string {
 	if request.Phone == "" {
 		validationErrors = append(validationErrors, emptyPhoneError)
 	} else if matched, err := regexp.MatchString(phoneRegexp, request.Phone); err != nil {
-		panic(err)
+		return nil, err
 	} else if !matched {
 		validationErrors = append(validationErrors, invalidPhoneFormatError)
 	}
@@ -74,16 +48,16 @@ func (request *CreateUserRequest) Validate() []string {
 		validationErrors = append(validationErrors, invalidConfirmPasswordError)
 	}
 
-	return validationErrors
+	return validationErrors, nil
 }
 
-func (request *LoginUserRequest) Validate() []string {
+func (request *LoginUserRequest) Validate() ([]string, error) {
 	var validationErrors []string
 
 	if request.Phone == "" {
 		validationErrors = append(validationErrors, emptyPhoneError)
 	} else if matched, err := regexp.MatchString(phoneRegexp, request.Phone); err != nil {
-		panic(err)
+		return nil, err
 	} else if !matched {
 		validationErrors = append(validationErrors, invalidPhoneFormatError)
 	}
@@ -94,5 +68,25 @@ func (request *LoginUserRequest) Validate() []string {
 		validationErrors = append(validationErrors, invalidPasswordLengthError)
 	}
 
-	return validationErrors
+	return validationErrors, nil
+}
+
+func (request *ChangePasswordRequest) Validate() ([]string, error) {
+	var validationErrors []string
+
+	if request.ID == "" {
+		validationErrors = append(validationErrors, emptyIDError)
+	}
+
+	if request.Password == "" {
+		validationErrors = append(validationErrors, emptyPasswordError)
+	} else if len(request.Password) < requiredPasswordLength {
+		validationErrors = append(validationErrors, invalidPasswordLengthError)
+	}
+
+	if request.Password != request.ConfirmPassword {
+		validationErrors = append(validationErrors, invalidConfirmPasswordError)
+	}
+
+	return validationErrors, nil
 }

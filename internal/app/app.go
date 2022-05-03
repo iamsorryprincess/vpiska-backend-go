@@ -19,7 +19,7 @@ func Run() {
 		return
 	}
 
-	userRepository, userRepoErr := database.InitUserRepository(
+	userRepository, userRepoErr := database.NewUserRepository(
 		configuration.Database.ConnectionString,
 		configuration.Database.DbName,
 		"users")
@@ -29,12 +29,13 @@ func Run() {
 		return
 	}
 
-	securityProvider := identity.InitPasswordHashProvider()
-	identityProvider := identity.InitJwtTokenProvider()
-	userService := service.InitUserService(userRepository, securityProvider, identityProvider)
+	securityProvider := identity.NewPasswordHashProvider()
+	identityProvider := identity.NewJwtTokenProvider()
+	userService := service.NewUserService(userRepository, securityProvider, identityProvider)
 
 	http.Handle("/api/v1/users/create", v1.CreateUserHandler(userService))
 	http.Handle("/api/v1/users/login", v1.LoginUserHandler(userService))
+	http.Handle("/api/v1/users/password/change", v1.ChangePasswordHandler(userService))
 
 	err := http.ListenAndServe(fmt.Sprintf("%s:%d", configuration.Server.Host, configuration.Server.Port), nil)
 	if err != nil {

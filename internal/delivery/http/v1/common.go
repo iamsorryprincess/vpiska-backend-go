@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-const contentTypeJSON = "application/json"
+const ContentTypeJSON = "application/json"
 
 var (
 	invalidMethodError      = errors.New("invalid method")
@@ -15,7 +15,11 @@ var (
 	validationError         = errors.New("invalid request")
 )
 
-func parseRequest(writer http.ResponseWriter, request *http.Request, method string, contentType string) ([]byte, error) {
+type Validated interface {
+	Validate() ([]string, error)
+}
+
+func ParseRequest(writer http.ResponseWriter, request *http.Request, method string, contentType string) ([]byte, error) {
 	if request.Method != method {
 		writer.WriteHeader(http.StatusMethodNotAllowed)
 		return nil, invalidMethodError
@@ -37,6 +41,24 @@ func parseRequest(writer http.ResponseWriter, request *http.Request, method stri
 	return data, nil
 }
 
+func DeserializeAndValidateRequest(writer http.ResponseWriter, data []byte, reqBody Validated) error {
+	if unMarshalErr := json.Unmarshal(data, reqBody); unMarshalErr != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		return unMarshalErr
+	}
+
+	return validateRequest(writer, reqBody)
+}
+
+func WriteResponse(writer http.ResponseWriter, response interface{}, domainError error) {
+	if domainError != nil {
+		_ = writeDomainErrorResponse(writer, domainError)
+		return
+	}
+
+	_ = writeSuccessResponse(writer, response)
+}
+
 func validateRequest(writer http.ResponseWriter, request Validated) error {
 	validationErrors, err := request.Validate()
 
@@ -54,7 +76,7 @@ func validateRequest(writer http.ResponseWriter, request Validated) error {
 			return marshalErr
 		}
 
-		writer.Header().Set("Content-Type", contentTypeJSON)
+		writer.Header().Set("Content-Type", ContentTypeJSON)
 		writer.WriteHeader(http.StatusOK)
 		_, writeErr := writer.Write(bytes)
 
@@ -69,15 +91,6 @@ func validateRequest(writer http.ResponseWriter, request Validated) error {
 	return nil
 }
 
-func deserializeAndValidateRequest(writer http.ResponseWriter, data []byte, reqBody Validated) error {
-	if unMarshalErr := json.Unmarshal(data, reqBody); unMarshalErr != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		return unMarshalErr
-	}
-
-	return validateRequest(writer, reqBody)
-}
-
 func writeDomainErrorResponse(writer http.ResponseWriter, domainError error) error {
 	errorResponse := createDomainErrorResponse(domainError)
 	bytes, marshalErr := json.Marshal(errorResponse)
@@ -87,7 +100,7 @@ func writeDomainErrorResponse(writer http.ResponseWriter, domainError error) err
 		return marshalErr
 	}
 
-	writer.Header().Set("Content-Type", contentTypeJSON)
+	writer.Header().Set("Content-Type", ContentTypeJSON)
 	writer.WriteHeader(http.StatusOK)
 	_, writeErr := writer.Write(bytes)
 
@@ -107,7 +120,7 @@ func writeSuccessResponse(writer http.ResponseWriter, response interface{}) erro
 		return marshalErr
 	}
 
-	writer.Header().Set("Content-Type", contentTypeJSON)
+	writer.Header().Set("Content-Type", ContentTypeJSON)
 	writer.WriteHeader(http.StatusOK)
 	_, writeErr := writer.Write(bytes)
 
@@ -117,13 +130,4 @@ func writeSuccessResponse(writer http.ResponseWriter, response interface{}) erro
 	}
 
 	return nil
-}
-
-func writeResponse(writer http.ResponseWriter, response interface{}, domainError error) {
-	if domainError != nil {
-		_ = writeDomainErrorResponse(writer, domainError)
-		return
-	}
-
-	_ = writeSuccessResponse(writer, response)
 }

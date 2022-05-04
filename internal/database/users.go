@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -83,7 +83,7 @@ func (r *userRepository) CheckNameAndPhone(ctx context.Context, name string, pho
 }
 
 func (r *userRepository) CreateUser(ctx context.Context, user *user.User) error {
-	user.ID = primitive.NewObjectID().Hex()
+	user.ID = uuid.New().String()
 	_, err := r.db.InsertOne(ctx, user)
 
 	if err != nil {

@@ -8,8 +8,7 @@ import (
 
 type Configuration struct {
 	Server struct {
-		Host string `yaml:"host"`
-		Port int    `yaml:"port"`
+		Port int `yaml:"port"`
 	} `yaml:"server"`
 	Database struct {
 		ConnectionString string `yaml:"connectionString"`

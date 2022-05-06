@@ -1,4 +1,4 @@
-package request
+package v1
 
 import "regexp"
 
@@ -19,14 +19,7 @@ const (
 	invalidConfirmPasswordError = "ConfirmPasswordInvalid"
 )
 
-type CreateUserRequest struct {
-	Name            string `json:"name"`
-	Phone           string `json:"phone"`
-	Password        string `json:"password"`
-	ConfirmPassword string `json:"confirmPassword"`
-}
-
-func (request *CreateUserRequest) Validate() ([]string, error) {
+func (request *createUserRequest) Validate() ([]string, error) {
 	var validationErrors []string
 
 	if request.Name == "" {
@@ -54,12 +47,7 @@ func (request *CreateUserRequest) Validate() ([]string, error) {
 	return validationErrors, nil
 }
 
-type LoginUserRequest struct {
-	Phone    string `json:"phone"`
-	Password string `json:"password"`
-}
-
-func (request *LoginUserRequest) Validate() ([]string, error) {
+func (request *loginUserRequest) Validate() ([]string, error) {
 	var validationErrors []string
 
 	if request.Phone == "" {
@@ -79,13 +67,7 @@ func (request *LoginUserRequest) Validate() ([]string, error) {
 	return validationErrors, nil
 }
 
-type ChangePasswordRequest struct {
-	ID              string `json:"id"`
-	Password        string `json:"password"`
-	ConfirmPassword string `json:"confirmPassword"`
-}
-
-func (request *ChangePasswordRequest) Validate() ([]string, error) {
+func (request *changePasswordRequest) Validate() ([]string, error) {
 	var validationErrors []string
 
 	if request.ID == "" {

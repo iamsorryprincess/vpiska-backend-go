@@ -6,9 +6,9 @@
         "contact": {},
         "version": "1.0"
     },
-    "basePath": "/api/v1",
+    "basePath": "/api",
     "paths": {
-        "/users/create": {
+        "/v1/users/create": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -27,7 +27,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_http_v1.createUserRequest"
+                            "$ref": "#/definitions/v1.createUserRequest"
                         }
                     }
                 ],
@@ -37,13 +37,13 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/internal_delivery_http_v1.apiResponse"
+                                    "$ref": "#/definitions/v1.apiResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "$ref": "#/definitions/internal_delivery_http_v1.loginResponse"
+                                            "$ref": "#/definitions/v1.loginResponse"
                                         }
                                     }
                                 }
@@ -53,7 +53,7 @@
                 }
             }
         },
-        "/users/login": {
+        "/v1/users/login": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -72,7 +72,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_http_v1.loginUserRequest"
+                            "$ref": "#/definitions/v1.loginUserRequest"
                         }
                     }
                 ],
@@ -82,13 +82,13 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/internal_delivery_http_v1.apiResponse"
+                                    "$ref": "#/definitions/v1.apiResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "$ref": "#/definitions/internal_delivery_http_v1.loginResponse"
+                                            "$ref": "#/definitions/v1.loginResponse"
                                         }
                                     }
                                 }
@@ -98,7 +98,7 @@
                 }
             }
         },
-        "/users/password/change": {
+        "/v1/users/password/change": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -117,7 +117,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_http_v1.changePasswordRequest"
+                            "$ref": "#/definitions/v1.changePasswordRequest"
                         }
                     }
                 ],
@@ -127,13 +127,13 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/internal_delivery_http_v1.apiResponse"
+                                    "$ref": "#/definitions/v1.apiResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "$ref": "#/definitions/internal_delivery_http_v1.loginResponse"
+                                            "$ref": "#/definitions/v1.loginResponse"
                                         }
                                     }
                                 }
@@ -145,13 +145,13 @@
         }
     },
     "definitions": {
-        "github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.apiResponse": {
+        "v1.apiResponse": {
             "type": "object",
             "properties": {
                 "errors": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.errorResponse"
+                        "$ref": "#/definitions/v1.errorResponse"
                     }
                 },
                 "isSuccess": {
@@ -160,7 +160,7 @@
                 "result": {}
             }
         },
-        "github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.changePasswordRequest": {
+        "v1.changePasswordRequest": {
             "type": "object",
             "properties": {
                 "confirmPassword": {
@@ -174,7 +174,7 @@
                 }
             }
         },
-        "github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.createUserRequest": {
+        "v1.createUserRequest": {
             "type": "object",
             "properties": {
                 "confirmPassword": {
@@ -191,7 +191,7 @@
                 }
             }
         },
-        "github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.errorResponse": {
+        "v1.errorResponse": {
             "type": "object",
             "properties": {
                 "errorCode": {
@@ -199,7 +199,7 @@
                 }
             }
         },
-        "github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.loginResponse": {
+        "v1.loginResponse": {
             "type": "object",
             "properties": {
                 "accessToken": {
@@ -219,92 +219,7 @@
                 }
             }
         },
-        "github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.loginUserRequest": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_delivery_http_v1.apiResponse": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/internal_delivery_http_v1.errorResponse"
-                    }
-                },
-                "isSuccess": {
-                    "type": "boolean"
-                },
-                "result": {}
-            }
-        },
-        "internal_delivery_http_v1.changePasswordRequest": {
-            "type": "object",
-            "properties": {
-                "confirmPassword": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_delivery_http_v1.createUserRequest": {
-            "type": "object",
-            "properties": {
-                "confirmPassword": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_delivery_http_v1.errorResponse": {
-            "type": "object",
-            "properties": {
-                "errorCode": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_delivery_http_v1.loginResponse": {
-            "type": "object",
-            "properties": {
-                "accessToken": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "imageId": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_delivery_http_v1.loginUserRequest": {
+        "v1.loginUserRequest": {
             "type": "object",
             "properties": {
                 "password": {

@@ -16,7 +16,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/users/create": {
+        "/v1/users/create": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_http_v1.createUserRequest"
+                            "$ref": "#/definitions/v1.createUserRequest"
                         }
                     }
                 ],
@@ -45,13 +45,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/internal_delivery_http_v1.apiResponse"
+                                    "$ref": "#/definitions/v1.apiResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "$ref": "#/definitions/internal_delivery_http_v1.loginResponse"
+                                            "$ref": "#/definitions/v1.loginResponse"
                                         }
                                     }
                                 }
@@ -61,7 +61,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/login": {
+        "/v1/users/login": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -80,7 +80,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_http_v1.loginUserRequest"
+                            "$ref": "#/definitions/v1.loginUserRequest"
                         }
                     }
                 ],
@@ -90,13 +90,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/internal_delivery_http_v1.apiResponse"
+                                    "$ref": "#/definitions/v1.apiResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "$ref": "#/definitions/internal_delivery_http_v1.loginResponse"
+                                            "$ref": "#/definitions/v1.loginResponse"
                                         }
                                     }
                                 }
@@ -106,7 +106,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/password/change": {
+        "/v1/users/password/change": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -125,7 +125,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_delivery_http_v1.changePasswordRequest"
+                            "$ref": "#/definitions/v1.changePasswordRequest"
                         }
                     }
                 ],
@@ -135,13 +135,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/internal_delivery_http_v1.apiResponse"
+                                    "$ref": "#/definitions/v1.apiResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "$ref": "#/definitions/internal_delivery_http_v1.loginResponse"
+                                            "$ref": "#/definitions/v1.loginResponse"
                                         }
                                     }
                                 }
@@ -153,13 +153,13 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.apiResponse": {
+        "v1.apiResponse": {
             "type": "object",
             "properties": {
                 "errors": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.errorResponse"
+                        "$ref": "#/definitions/v1.errorResponse"
                     }
                 },
                 "isSuccess": {
@@ -168,7 +168,7 @@ const docTemplate = `{
                 "result": {}
             }
         },
-        "github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.changePasswordRequest": {
+        "v1.changePasswordRequest": {
             "type": "object",
             "properties": {
                 "confirmPassword": {
@@ -182,7 +182,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.createUserRequest": {
+        "v1.createUserRequest": {
             "type": "object",
             "properties": {
                 "confirmPassword": {
@@ -199,7 +199,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.errorResponse": {
+        "v1.errorResponse": {
             "type": "object",
             "properties": {
                 "errorCode": {
@@ -207,7 +207,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.loginResponse": {
+        "v1.loginResponse": {
             "type": "object",
             "properties": {
                 "accessToken": {
@@ -227,92 +227,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.loginUserRequest": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_delivery_http_v1.apiResponse": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/internal_delivery_http_v1.errorResponse"
-                    }
-                },
-                "isSuccess": {
-                    "type": "boolean"
-                },
-                "result": {}
-            }
-        },
-        "internal_delivery_http_v1.changePasswordRequest": {
-            "type": "object",
-            "properties": {
-                "confirmPassword": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_delivery_http_v1.createUserRequest": {
-            "type": "object",
-            "properties": {
-                "confirmPassword": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_delivery_http_v1.errorResponse": {
-            "type": "object",
-            "properties": {
-                "errorCode": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_delivery_http_v1.loginResponse": {
-            "type": "object",
-            "properties": {
-                "accessToken": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "imageId": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_delivery_http_v1.loginUserRequest": {
+        "v1.loginUserRequest": {
             "type": "object",
             "properties": {
                 "password": {
@@ -330,7 +245,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
-	BasePath:         "/api/v1",
+	BasePath:         "/api",
 	Schemes:          []string{},
 	Title:            "Swagger UI",
 	Description:      "API vpiska.ru",

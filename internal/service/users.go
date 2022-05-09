@@ -3,91 +3,112 @@ package service
 import (
 	"context"
 
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/auth"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/security"
 )
 
-type UserService struct {
-	repository user.Repository
-	security   user.SecurityProvider
-	identity   user.IdentityProvider
+type userService struct {
+	repository repository.Users
+	security   security.PasswordManager
+	auth       auth.TokenManager
 }
 
-func NewUserService(
-	repository user.Repository,
-	security user.SecurityProvider,
-	identity user.IdentityProvider) *UserService {
-	return &UserService{
+func newUserService(
+	repository repository.Users,
+	security security.PasswordManager,
+	auth auth.TokenManager) Users {
+	return &userService{
 		repository: repository,
 		security:   security,
-		identity:   identity,
+		auth:       auth,
 	}
 }
 
-func (s *UserService) Create(ctx context.Context, name string, phone string, password string) (*user.LoginResponse, error) {
-	checkError := s.repository.CheckNameAndPhone(ctx, name, phone)
+func (s *userService) Create(ctx context.Context, input CreateUserInput) (LoginResponse, error) {
+	checkError := s.repository.CheckNameAndPhone(ctx, input.Name, input.Phone)
 
 	if checkError != nil {
-		return nil, user.MapError(checkError)
+		return LoginResponse{}, domain.MapUserError(checkError)
 	}
 
-	model := &user.User{
-		Name:      name,
+	model := domain.User{
+		Name:      input.Name,
 		PhoneCode: "+7",
-		Phone:     phone,
-		Password:  s.security.HashPassword(password),
+		Phone:     input.Phone,
+		Password:  s.security.HashPassword(input.Password),
 	}
 
-	createError := s.repository.CreateUser(ctx, model)
+	userId, createError := s.repository.CreateUser(ctx, model)
 
 	if createError != nil {
-		return nil, user.MapError(createError)
+		return LoginResponse{}, domain.MapUserError(createError)
 	}
 
-	return &user.LoginResponse{
-		ID:          model.ID,
+	tokenInput := auth.CreateTokenInput{
+		ID:      userId,
+		Name:    model.Name,
+		ImageID: model.ImageID,
+	}
+
+	return LoginResponse{
+		ID:          userId,
 		Name:        model.Name,
 		Phone:       model.Phone,
 		ImageID:     model.ImageID,
-		AccessToken: s.identity.GetAccessToken(model),
+		AccessToken: s.auth.GetAccessToken(tokenInput),
 	}, nil
 }
 
-func (s *UserService) Login(ctx context.Context, phone string, password string) (*user.LoginResponse, error) {
-	model, err := s.repository.GetUserByPhone(ctx, phone)
+func (s *userService) Login(ctx context.Context, input LoginUserInput) (LoginResponse, error) {
+	model, err := s.repository.GetUserByPhone(ctx, input.Phone)
 
 	if err != nil {
-		return nil, user.MapError(err)
+		return LoginResponse{}, domain.MapUserError(err)
 	}
 
-	if !s.security.VerifyHashedPassword(model.Password, password) {
-		return nil, user.InvalidPassword
+	if !s.security.VerifyHashedPassword(model.Password, input.Password) {
+		return LoginResponse{}, domain.ErrInvalidPassword
 	}
 
-	return &user.LoginResponse{
+	tokenInput := auth.CreateTokenInput{
+		ID:      model.ID,
+		Name:    model.Name,
+		ImageID: model.ImageID,
+	}
+
+	return LoginResponse{
 		ID:          model.ID,
 		Name:        model.Name,
 		Phone:       model.Phone,
 		ImageID:     model.ImageID,
-		AccessToken: s.identity.GetAccessToken(model),
+		AccessToken: s.auth.GetAccessToken(tokenInput),
 	}, nil
 }
 
-func (s *UserService) ChangePassword(ctx context.Context, id string, password string) (*user.LoginResponse, error) {
-	model, findErr := s.repository.GetUserByID(ctx, id)
+func (s *userService) ChangePassword(ctx context.Context, input ChangePasswordInput) (LoginResponse, error) {
+	model, findErr := s.repository.GetUserByID(ctx, input.ID)
 
 	if findErr != nil {
-		return nil, user.MapError(findErr)
+		return LoginResponse{}, domain.MapUserError(findErr)
 	}
 
-	if updateErr := s.repository.ChangePassword(ctx, id, s.security.HashPassword(password)); updateErr != nil {
-		return nil, user.MapError(updateErr)
+	if updateErr := s.repository.ChangePassword(ctx, input.ID, s.security.HashPassword(input.Password)); updateErr != nil {
+		return LoginResponse{}, domain.MapUserError(updateErr)
 	}
 
-	return &user.LoginResponse{
+	tokenInput := auth.CreateTokenInput{
+		ID:      model.ID,
+		Name:    model.Name,
+		ImageID: model.ImageID,
+	}
+
+	return LoginResponse{
 		ID:          model.ID,
 		Name:        model.Name,
 		Phone:       model.Phone,
 		ImageID:     model.ImageID,
-		AccessToken: s.identity.GetAccessToken(model),
+		AccessToken: s.auth.GetAccessToken(tokenInput),
 	}, nil
 }

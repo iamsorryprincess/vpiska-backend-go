@@ -1,40 +1,22 @@
-package database
+package repository
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain/user"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type userRepository struct {
 	db *mongo.Collection
 }
 
-func NewUserRepository(connectionString string, dbName string, collectionName string) (user.Repository, error) {
-	client, err := mongo.NewClient(options.Client().ApplyURI(connectionString))
-
-	if err != nil {
-		return nil, err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if connectionErr := client.Connect(ctx); connectionErr != nil {
-		return nil, connectionErr
-	}
-
-	db := client.Database(dbName)
-	collection := db.Collection(collectionName)
-
+func newMongoUsers(db *mongo.Database, collectionName string) Users {
 	return &userRepository{
-		db: collection,
-	}, nil
+		db: db.Collection(collectionName),
+	}
 }
 
 type groupingResult struct {
@@ -68,37 +50,37 @@ func (r *userRepository) CheckNameAndPhone(ctx context.Context, name string, pho
 	}
 
 	if len(result) == 2 {
-		return user.NameAndPhoneAlreadyUse
+		return domain.ErrNameAndPhoneAlreadyUse
 	}
 
 	if result[0].Name == name && result[0].Phone == phone {
-		return user.NameAndPhoneAlreadyUse
+		return domain.ErrNameAndPhoneAlreadyUse
 	}
 
 	if result[0].Phone == phone {
-		return user.PhoneAlreadyUse
+		return domain.ErrPhoneAlreadyUse
 	}
 
-	return user.NameAlreadyUse
+	return domain.ErrNameAlreadyUse
 }
 
-func (r *userRepository) CreateUser(ctx context.Context, user *user.User) error {
+func (r *userRepository) CreateUser(ctx context.Context, user domain.User) (string, error) {
 	user.ID = uuid.New().String()
 	_, err := r.db.InsertOne(ctx, user)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return user.ID, nil
 }
 
-func (r *userRepository) GetUserByID(ctx context.Context, id string) (*user.User, error) {
+func (r *userRepository) GetUserByID(ctx context.Context, id string) (domain.User, error) {
 	find := bson.D{{"_id", id}}
 	return getUserByFilter(ctx, r.db, find)
 }
 
-func (r *userRepository) GetUserByPhone(ctx context.Context, phone string) (*user.User, error) {
+func (r *userRepository) GetUserByPhone(ctx context.Context, phone string) (domain.User, error) {
 	find := bson.D{{"phone", phone}}
 	return getUserByFilter(ctx, r.db, find)
 }
@@ -113,20 +95,20 @@ func (r *userRepository) ChangePassword(ctx context.Context, id string, password
 	}
 
 	if result.MatchedCount == 0 {
-		return user.NotFound
+		return domain.ErrUserNotFound
 	}
 
 	return nil
 }
 
-func getUserByFilter(ctx context.Context, db *mongo.Collection, filter bson.D) (*user.User, error) {
-	model := &user.User{}
+func getUserByFilter(ctx context.Context, db *mongo.Collection, filter bson.D) (domain.User, error) {
+	model := domain.User{}
 
 	if err := db.FindOne(ctx, filter).Decode(&model); err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, user.NotFound
+			return model, domain.ErrUserNotFound
 		}
-		return nil, err
+		return model, err
 	}
 
 	return model, nil

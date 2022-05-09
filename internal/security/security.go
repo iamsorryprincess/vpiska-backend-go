@@ -1,6 +1,6 @@
-package user
+package security
 
-type SecurityProvider interface {
+type PasswordManager interface {
 	HashPassword(password string) string
 	VerifyHashedPassword(hashedPassword string, providedPassword string) bool
 }

@@ -1,16 +1,16 @@
-basePath: /api/v1
+basePath: /api
 definitions:
-  github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.apiResponse:
+  v1.apiResponse:
     properties:
       errors:
         items:
-          $ref: '#/definitions/github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.errorResponse'
+          $ref: '#/definitions/v1.errorResponse'
         type: array
       isSuccess:
         type: boolean
       result: {}
     type: object
-  github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.changePasswordRequest:
+  v1.changePasswordRequest:
     properties:
       confirmPassword:
         type: string
@@ -19,7 +19,7 @@ definitions:
       password:
         type: string
     type: object
-  github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.createUserRequest:
+  v1.createUserRequest:
     properties:
       confirmPassword:
         type: string
@@ -30,12 +30,12 @@ definitions:
       phone:
         type: string
     type: object
-  github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.errorResponse:
+  v1.errorResponse:
     properties:
       errorCode:
         type: string
     type: object
-  github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.loginResponse:
+  v1.loginResponse:
     properties:
       accessToken:
         type: string
@@ -48,62 +48,7 @@ definitions:
       phone:
         type: string
     type: object
-  github.com_iamsorryprincess_vpiska-backend-go_internal_delivery_http_v1.loginUserRequest:
-    properties:
-      password:
-        type: string
-      phone:
-        type: string
-    type: object
-  internal_delivery_http_v1.apiResponse:
-    properties:
-      errors:
-        items:
-          $ref: '#/definitions/internal_delivery_http_v1.errorResponse'
-        type: array
-      isSuccess:
-        type: boolean
-      result: {}
-    type: object
-  internal_delivery_http_v1.changePasswordRequest:
-    properties:
-      confirmPassword:
-        type: string
-      id:
-        type: string
-      password:
-        type: string
-    type: object
-  internal_delivery_http_v1.createUserRequest:
-    properties:
-      confirmPassword:
-        type: string
-      name:
-        type: string
-      password:
-        type: string
-      phone:
-        type: string
-    type: object
-  internal_delivery_http_v1.errorResponse:
-    properties:
-      errorCode:
-        type: string
-    type: object
-  internal_delivery_http_v1.loginResponse:
-    properties:
-      accessToken:
-        type: string
-      id:
-        type: string
-      imageId:
-        type: string
-      name:
-        type: string
-      phone:
-        type: string
-    type: object
-  internal_delivery_http_v1.loginUserRequest:
+  v1.loginUserRequest:
     properties:
       password:
         type: string
@@ -116,7 +61,7 @@ info:
   title: Swagger UI
   version: "1.0"
 paths:
-  /users/create:
+  /v1/users/create:
     post:
       consumes:
       - application/json
@@ -126,7 +71,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_http_v1.createUserRequest'
+          $ref: '#/definitions/v1.createUserRequest'
       produces:
       - application/json
       responses:
@@ -134,15 +79,15 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_delivery_http_v1.apiResponse'
+            - $ref: '#/definitions/v1.apiResponse'
             - properties:
                 result:
-                  $ref: '#/definitions/internal_delivery_http_v1.loginResponse'
+                  $ref: '#/definitions/v1.loginResponse'
               type: object
       summary: Создать пользователя
       tags:
       - users
-  /users/login:
+  /v1/users/login:
     post:
       consumes:
       - application/json
@@ -152,7 +97,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_http_v1.loginUserRequest'
+          $ref: '#/definitions/v1.loginUserRequest'
       produces:
       - application/json
       responses:
@@ -160,15 +105,15 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_delivery_http_v1.apiResponse'
+            - $ref: '#/definitions/v1.apiResponse'
             - properties:
                 result:
-                  $ref: '#/definitions/internal_delivery_http_v1.loginResponse'
+                  $ref: '#/definitions/v1.loginResponse'
               type: object
       summary: Войти в систему
       tags:
       - users
-  /users/password/change:
+  /v1/users/password/change:
     post:
       consumes:
       - application/json
@@ -178,7 +123,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_delivery_http_v1.changePasswordRequest'
+          $ref: '#/definitions/v1.changePasswordRequest'
       produces:
       - application/json
       responses:
@@ -186,10 +131,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/internal_delivery_http_v1.apiResponse'
+            - $ref: '#/definitions/v1.apiResponse'
             - properties:
                 result:
-                  $ref: '#/definitions/internal_delivery_http_v1.loginResponse'
+                  $ref: '#/definitions/v1.loginResponse'
               type: object
       summary: Изменить пароль
       tags:

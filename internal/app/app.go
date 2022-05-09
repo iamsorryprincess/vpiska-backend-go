@@ -1,54 +1,41 @@
 package app
 
 import (
-	"fmt"
-	"log"
-	"net/http"
-
 	_ "github.com/iamsorryprincess/vpiska-backend-go/docs"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/database"
-	v1 "github.com/iamsorryprincess/vpiska-backend-go/internal/delivery/http/v1"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/identity"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/auth"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/delivery/http"
+	logging "github.com/iamsorryprincess/vpiska-backend-go/internal/logger"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/security"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/server"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
-	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 // @title           Swagger UI
 // @version         1.0
 // @description     API vpiska.ru
-// @BasePath  /api/v1
+// @BasePath  /api
 
 func Run() {
+	logger := logging.NewLogger()
 	configuration, configError := parseConfig()
 
 	if configError != nil {
-		log.Fatal(configError)
+		logger.LogError(configError)
 		return
 	}
 
-	userRepository, userRepoErr := database.NewUserRepository(
-		configuration.Database.ConnectionString,
-		configuration.Database.DbName,
-		"users")
+	repositories, repoErr := repository.NewRepositories(configuration.Database.ConnectionString, configuration.Database.DbName)
 
-	if userRepoErr != nil {
-		log.Fatal(userRepoErr)
+	if repoErr != nil {
+		logger.LogError(repoErr)
 		return
 	}
 
-	securityProvider := identity.NewPasswordHashProvider()
-	identityProvider := identity.NewJwtTokenProvider()
-	userService := service.NewUserService(userRepository, securityProvider, identityProvider)
-	userHandler := v1.NewUserHandler(userService)
-
-	swaggerUrl := fmt.Sprintf("http://localhost:%d/swagger/doc.json", configuration.Server.Port)
-	http.HandleFunc("/swagger/", httpSwagger.Handler(httpSwagger.URL(swaggerUrl)))
-	http.HandleFunc("/api/v1/users/create", userHandler.CreateUser)
-	http.HandleFunc("/api/v1/users/login", userHandler.LoginUser)
-	http.HandleFunc("/api/v1/users/password/change", userHandler.ChangePassword)
-
-	err := http.ListenAndServe(fmt.Sprintf(":%d", configuration.Server.Port), nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	jwtTokenManager := auth.NewJwtManager()
+	passwordManager := security.NewPasswordManager()
+	services := service.NewServices(repositories, passwordManager, jwtTokenManager)
+	handler := http.NewHandler(services, logger, configuration.Server.Port)
+	httpServer := server.NewServer(configuration.Server.Port, handler)
+	logger.LogError(httpServer.Run())
 }

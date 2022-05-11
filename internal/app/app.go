@@ -2,13 +2,13 @@ package app
 
 import (
 	_ "github.com/iamsorryprincess/vpiska-backend-go/docs"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/auth"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/delivery/http"
-	logging "github.com/iamsorryprincess/vpiska-backend-go/internal/logger"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/security"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/server"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/hash"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/logging"
 )
 
 // @title           Swagger UI
@@ -18,22 +18,22 @@ import (
 
 func Run() {
 	logger := logging.NewLogger()
-	configuration, configError := parseConfig()
+	configuration, err := parseConfig()
 
-	if configError != nil {
-		logger.LogError(configError)
+	if err != nil {
+		logger.LogError(err)
 		return
 	}
 
-	repositories, repoErr := repository.NewRepositories(configuration.Database.ConnectionString, configuration.Database.DbName)
+	repositories, err := repository.NewRepositories(configuration.Database.ConnectionString, configuration.Database.DbName)
 
-	if repoErr != nil {
-		logger.LogError(repoErr)
+	if err != nil {
+		logger.LogError(err)
 		return
 	}
 
 	jwtTokenManager := auth.NewJwtManager()
-	passwordManager := security.NewPasswordManager()
+	passwordManager := hash.NewPasswordHashManager()
 	services := service.NewServices(repositories, passwordManager, jwtTokenManager)
 	handler := http.NewHandler(services, logger, configuration.Server.Port)
 	httpServer := server.NewServer(configuration.Server.Port, handler)

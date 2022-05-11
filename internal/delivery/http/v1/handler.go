@@ -5,16 +5,16 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/logger"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/logging"
 )
 
 type Handler struct {
 	services *service.Services
-	logger   logger.Logger
+	logger   logging.Logger
 }
 
-func NewHandler(services *service.Services, logger logger.Logger) *Handler {
+func NewHandler(services *service.Services, logger logging.Logger) *Handler {
 	return &Handler{
 		services: services,
 		logger:   logger,
@@ -22,7 +22,7 @@ func NewHandler(services *service.Services, logger logger.Logger) *Handler {
 }
 
 func (h *Handler) InitAPI(mux *http.ServeMux) {
-	h.initUsersApi(mux)
+	h.initUsersAPI(mux)
 }
 
 func (h *Handler) handlePostJSON(writer http.ResponseWriter, request *http.Request) ([]byte, error) {
@@ -36,23 +36,23 @@ func (h *Handler) handlePostJSON(writer http.ResponseWriter, request *http.Reque
 		return nil, errInvalidContentType
 	}
 
-	data, readErr := ioutil.ReadAll(request.Body)
+	data, err := ioutil.ReadAll(request.Body)
 	defer request.Body.Close()
 
-	if readErr != nil {
+	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.LogError(readErr)
-		return nil, readErr
+		h.logger.LogError(err)
+		return nil, err
 	}
 
 	return data, nil
 }
 
 func (h *Handler) bindJSON(data []byte, request requestForValidate, writer http.ResponseWriter) error {
-	if unMarshalErr := json.Unmarshal(data, request); unMarshalErr != nil {
+	if err := json.Unmarshal(data, request); err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.LogError(unMarshalErr)
-		return unMarshalErr
+		h.logger.LogError(err)
+		return err
 	}
 
 	validationErrs, err := request.validate()
@@ -64,23 +64,23 @@ func (h *Handler) bindJSON(data []byte, request requestForValidate, writer http.
 	}
 
 	if validationErrs != nil {
-		errResponse := createValidationErrorResponse(validationErrs)
-		bytes, marshalErr := json.Marshal(errResponse)
+		response := createValidationErrorResponse(validationErrs)
+		bytes, err := json.Marshal(&response)
 
-		if marshalErr != nil {
+		if err != nil {
 			writer.WriteHeader(http.StatusInternalServerError)
-			h.logger.LogError(marshalErr)
-			return marshalErr
+			h.logger.LogError(err)
+			return err
 		}
 
 		writer.Header().Set("Content-Type", contentTypeJSON)
 		writer.WriteHeader(http.StatusOK)
-		_, writeErr := writer.Write(bytes)
+		_, err = writer.Write(bytes)
 
-		if writeErr != nil {
+		if err != nil {
 			writer.WriteHeader(http.StatusInternalServerError)
-			h.logger.LogError(writeErr)
-			return writeErr
+			h.logger.LogError(err)
+			return err
 		}
 
 		return errInvalidRequest
@@ -90,42 +90,41 @@ func (h *Handler) bindJSON(data []byte, request requestForValidate, writer http.
 }
 
 func (h *Handler) writeDomainErrorResponse(writer http.ResponseWriter, domainError error) {
-	errResponse := createDomainErrorResponse(domainError)
-	bytes, marshalErr := json.Marshal(errResponse)
+	response := createDomainErrorResponse(domainError)
+	bytes, err := json.Marshal(&response)
 
-	if marshalErr != nil {
+	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.LogError(marshalErr)
+		h.logger.LogError(err)
 		return
 	}
 
 	writer.Header().Set("Content-Type", contentTypeJSON)
 	writer.WriteHeader(http.StatusOK)
-	_, writeErr := writer.Write(bytes)
+	_, err = writer.Write(bytes)
 
-	if writeErr != nil {
+	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.LogError(marshalErr)
-		return
+		h.logger.LogError(err)
 	}
 }
 
 func (h *Handler) writeSuccessResponse(writer http.ResponseWriter, response interface{}) {
-	bytes, marshalErr := json.Marshal(createSuccessResponse(response))
+	result := createSuccessResponse(response)
+	bytes, err := json.Marshal(&result)
 
-	if marshalErr != nil {
+	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.LogError(marshalErr)
+		h.logger.LogError(err)
 		return
 	}
 
 	writer.Header().Set("Content-Type", contentTypeJSON)
 	writer.WriteHeader(http.StatusOK)
-	_, writeErr := writer.Write(bytes)
+	_, err = writer.Write(bytes)
 
-	if writeErr != nil {
+	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.LogError(marshalErr)
-		return
+		h.logger.LogError(err)
 	}
 }

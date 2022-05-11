@@ -33,43 +33,43 @@ type errorResponse struct {
 }
 
 type apiResponse struct {
-	IsSuccess bool             `json:"isSuccess"`
-	Result    interface{}      `json:"result"`
-	Errors    []*errorResponse `json:"errors"`
+	IsSuccess bool            `json:"isSuccess"`
+	Result    interface{}     `json:"result"`
+	Errors    []errorResponse `json:"errors"`
 }
 
 type requestForValidate interface {
 	validate() ([]string, error)
 }
 
-func createDomainErrorResponse(err error) *apiResponse {
-	return &apiResponse{
+func createDomainErrorResponse(err error) apiResponse {
+	return apiResponse{
 		IsSuccess: false,
 		Result:    nil,
-		Errors: []*errorResponse{{
+		Errors: []errorResponse{{
 			ErrorCode: err.Error(),
 		}},
 	}
 }
 
-func createValidationErrorResponse(errs []string) *apiResponse {
-	errorsResponses := make([]*errorResponse, len(errs))
+func createValidationErrorResponse(errs []string) apiResponse {
+	errorsResponses := make([]errorResponse, len(errs))
 
 	for index, item := range errs {
-		errorsResponses[index] = &errorResponse{
+		errorsResponses[index] = errorResponse{
 			ErrorCode: item,
 		}
 	}
 
-	return &apiResponse{
+	return apiResponse{
 		IsSuccess: false,
 		Result:    nil,
 		Errors:    errorsResponses,
 	}
 }
 
-func createSuccessResponse(response interface{}) *apiResponse {
-	return &apiResponse{
+func createSuccessResponse(response interface{}) apiResponse {
+	return apiResponse{
 		IsSuccess: true,
 		Result:    response,
 		Errors:    nil,

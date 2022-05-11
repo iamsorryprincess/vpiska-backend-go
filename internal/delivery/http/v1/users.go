@@ -7,7 +7,7 @@ import (
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
 )
 
-func (h *Handler) initUsersApi(mux *http.ServeMux) {
+func (h *Handler) initUsersAPI(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/users/create", h.createUser)
 	mux.HandleFunc("/api/v1/users/login", h.loginUser)
 	mux.HandleFunc("/api/v1/users/password/change", h.changePassword)
@@ -38,24 +38,24 @@ type createUserRequest struct {
 // @Success      200 {object} apiResponse{result=loginResponse}
 // @Router       /v1/users/create [post]
 func (h *Handler) createUser(writer http.ResponseWriter, request *http.Request) {
-	data, handleErr := h.handlePostJSON(writer, request)
+	data, err := h.handlePostJSON(writer, request)
 
-	if handleErr != nil {
+	if err != nil {
 		return
 	}
 
 	body := createUserRequest{}
-	bindErr := h.bindJSON(data, &body, writer)
+	err = h.bindJSON(data, &body, writer)
 
-	if bindErr != nil {
+	if err != nil {
 		return
 	}
 
 	input := body.toServiceInput()
-	result, domainErr := h.services.Users.Create(request.Context(), input)
+	result, err := h.services.Users.Create(request.Context(), input)
 
-	if domainErr != nil {
-		h.writeDomainErrorResponse(writer, domainErr)
+	if err != nil {
+		h.writeDomainErrorResponse(writer, err)
 		return
 	}
 
@@ -78,24 +78,24 @@ type loginUserRequest struct {
 // @Success      200 {object} apiResponse{result=loginResponse}
 // @Router       /v1/users/login [post]
 func (h *Handler) loginUser(writer http.ResponseWriter, request *http.Request) {
-	data, handleErr := h.handlePostJSON(writer, request)
+	data, err := h.handlePostJSON(writer, request)
 
-	if handleErr != nil {
+	if err != nil {
 		return
 	}
 
 	body := loginUserRequest{}
-	bindErr := h.bindJSON(data, &body, writer)
+	err = h.bindJSON(data, &body, writer)
 
-	if bindErr != nil {
+	if err != nil {
 		return
 	}
 
 	input := body.toServiceInput()
-	result, domainErr := h.services.Users.Login(request.Context(), input)
+	result, err := h.services.Users.Login(request.Context(), input)
 
-	if domainErr != nil {
-		h.writeDomainErrorResponse(writer, domainErr)
+	if err != nil {
+		h.writeDomainErrorResponse(writer, err)
 		return
 	}
 
@@ -119,24 +119,24 @@ type changePasswordRequest struct {
 // @Success      200 {object} apiResponse{result=loginResponse}
 // @Router       /v1/users/password/change [post]
 func (h *Handler) changePassword(writer http.ResponseWriter, request *http.Request) {
-	data, handleErr := h.handlePostJSON(writer, request)
+	data, err := h.handlePostJSON(writer, request)
 
-	if handleErr != nil {
+	if err != nil {
 		return
 	}
 
 	body := changePasswordRequest{}
-	bindErr := h.bindJSON(data, &body, writer)
+	err = h.bindJSON(data, &body, writer)
 
-	if bindErr != nil {
+	if err != nil {
 		return
 	}
 
 	input := body.toServiceInput()
-	result, domainErr := h.services.Users.ChangePassword(request.Context(), input)
+	result, err := h.services.Users.ChangePassword(request.Context(), input)
 
-	if domainErr != nil {
-		h.writeDomainErrorResponse(writer, domainErr)
+	if err != nil {
+		h.writeDomainErrorResponse(writer, err)
 		return
 	}
 

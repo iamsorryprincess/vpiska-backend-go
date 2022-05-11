@@ -5,12 +5,12 @@ import (
 	"net/http"
 
 	v1 "github.com/iamsorryprincess/vpiska-backend-go/internal/delivery/http/v1"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/logger"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/logging"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-func NewHandler(services *service.Services, logger logger.Logger, port int) http.Handler {
+func NewHandler(services *service.Services, logger logging.Logger, port int) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", func(writer http.ResponseWriter, request *http.Request) {

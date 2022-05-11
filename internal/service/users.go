@@ -3,47 +3,47 @@ package service
 import (
 	"context"
 
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/auth"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/security"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/hash"
 )
 
 type userService struct {
-	repository repository.Users
-	security   security.PasswordManager
-	auth       auth.TokenManager
+	repository  repository.Users
+	hashManager hash.PasswordHashManager
+	auth        auth.TokenManager
 }
 
 func newUserService(
 	repository repository.Users,
-	security security.PasswordManager,
+	hashManager hash.PasswordHashManager,
 	auth auth.TokenManager) Users {
 	return &userService{
-		repository: repository,
-		security:   security,
-		auth:       auth,
+		repository:  repository,
+		hashManager: hashManager,
+		auth:        auth,
 	}
 }
 
 func (s *userService) Create(ctx context.Context, input CreateUserInput) (LoginResponse, error) {
-	checkError := s.repository.CheckNameAndPhone(ctx, input.Name, input.Phone)
+	err := s.repository.CheckNameAndPhone(ctx, input.Name, input.Phone)
 
-	if checkError != nil {
-		return LoginResponse{}, domain.MapUserError(checkError)
+	if err != nil {
+		return LoginResponse{}, domain.MapUserError(err)
 	}
 
 	model := domain.User{
 		Name:      input.Name,
 		PhoneCode: "+7",
 		Phone:     input.Phone,
-		Password:  s.security.HashPassword(input.Password),
+		Password:  s.hashManager.HashPassword(input.Password),
 	}
 
-	userId, createError := s.repository.CreateUser(ctx, model)
+	userId, err := s.repository.CreateUser(ctx, model)
 
-	if createError != nil {
-		return LoginResponse{}, domain.MapUserError(createError)
+	if err != nil {
+		return LoginResponse{}, domain.MapUserError(err)
 	}
 
 	tokenInput := auth.CreateTokenInput{
@@ -68,7 +68,7 @@ func (s *userService) Login(ctx context.Context, input LoginUserInput) (LoginRes
 		return LoginResponse{}, domain.MapUserError(err)
 	}
 
-	if !s.security.VerifyHashedPassword(model.Password, input.Password) {
+	if !s.hashManager.VerifyHashedPassword(model.Password, input.Password) {
 		return LoginResponse{}, domain.ErrInvalidPassword
 	}
 
@@ -88,14 +88,14 @@ func (s *userService) Login(ctx context.Context, input LoginUserInput) (LoginRes
 }
 
 func (s *userService) ChangePassword(ctx context.Context, input ChangePasswordInput) (LoginResponse, error) {
-	model, findErr := s.repository.GetUserByID(ctx, input.ID)
+	model, err := s.repository.GetUserByID(ctx, input.ID)
 
-	if findErr != nil {
-		return LoginResponse{}, domain.MapUserError(findErr)
+	if err != nil {
+		return LoginResponse{}, domain.MapUserError(err)
 	}
 
-	if updateErr := s.repository.ChangePassword(ctx, input.ID, s.security.HashPassword(input.Password)); updateErr != nil {
-		return LoginResponse{}, domain.MapUserError(updateErr)
+	if err = s.repository.ChangePassword(ctx, input.ID, s.hashManager.HashPassword(input.Password)); err != nil {
+		return LoginResponse{}, domain.MapUserError(err)
 	}
 
 	tokenInput := auth.CreateTokenInput{

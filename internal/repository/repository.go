@@ -31,8 +31,12 @@ func NewRepositories(connectionString string, dbName string) (*Repositories, err
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if connectionErr := client.Connect(ctx); connectionErr != nil {
-		return nil, connectionErr
+	if err = client.Connect(ctx); err != nil {
+		return nil, err
+	}
+
+	if err = client.Ping(context.Background(), nil); err != nil {
+		return nil, err
 	}
 
 	db := client.Database(dbName)

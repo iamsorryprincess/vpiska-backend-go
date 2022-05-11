@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/auth"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/security"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/hash"
 )
 
 type LoginResponse struct {
@@ -44,9 +44,9 @@ type Services struct {
 
 func NewServices(
 	repositories *repository.Repositories,
-	security security.PasswordManager,
+	hashManager hash.PasswordHashManager,
 	auth auth.TokenManager) *Services {
 	return &Services{
-		Users: newUserService(repositories.Users, security, auth),
+		Users: newUserService(repositories.Users, hashManager, auth),
 	}
 }

@@ -61,6 +61,31 @@ info:
   title: Swagger UI
   version: "1.0"
 paths:
+  /v1/media:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.apiResponse'
+            - properties:
+                result:
+                  type: string
+              type: object
+      summary: Загрузить медиафайл
+      tags:
+      - media
   /v1/users/create:
     post:
       consumes:

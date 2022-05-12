@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"io"
 
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository"
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
@@ -38,15 +39,35 @@ type Users interface {
 	ChangePassword(ctx context.Context, input ChangePasswordInput) (LoginResponse, error)
 }
 
+type CreateMediaInput struct {
+	Name        string
+	ContentType string
+	Size        int64
+	File        io.Reader
+}
+
+type Media interface {
+	Create(ctx context.Context, input *CreateMediaInput) (string, error)
+}
+
 type Services struct {
 	Users Users
+	Media Media
 }
 
 func NewServices(
 	repositories *repository.Repositories,
 	hashManager hash.PasswordHashManager,
-	auth auth.TokenManager) *Services {
+	auth auth.TokenManager) (*Services, error) {
+
+	media, err := newMediaService(repositories.Media)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return &Services{
 		Users: newUserService(repositories.Users, hashManager, auth),
-	}
+		Media: media,
+	}, nil
 }

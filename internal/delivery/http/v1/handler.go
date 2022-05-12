@@ -3,26 +3,30 @@ package v1
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
-	"github.com/iamsorryprincess/vpiska-backend-go/pkg/logging"
 )
 
 type Handler struct {
 	services *service.Services
-	logger   logging.Logger
+	logger   *log.Logger
 }
 
-func NewHandler(services *service.Services, logger logging.Logger) *Handler {
+func NewHandler(services *service.Services, logger *log.Logger) *Handler {
 	return &Handler{
 		services: services,
 		logger:   logger,
 	}
 }
 
-func (h *Handler) InitAPI(mux *http.ServeMux) {
+func (h *Handler) InitAPI(mux *http.ServeMux) http.Handler {
+	recoveryMiddleware := newRecoveryMiddleware(h.logger)
 	h.initUsersAPI(mux)
+	h.initMediaAPI(mux)
+	return recoveryMiddleware(mux)
 }
 
 func (h *Handler) handlePostJSON(writer http.ResponseWriter, request *http.Request) ([]byte, error) {
@@ -41,7 +45,7 @@ func (h *Handler) handlePostJSON(writer http.ResponseWriter, request *http.Reque
 
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.LogError(err)
+		h.logger.Println(err)
 		return nil, err
 	}
 
@@ -51,7 +55,7 @@ func (h *Handler) handlePostJSON(writer http.ResponseWriter, request *http.Reque
 func (h *Handler) bindJSON(data []byte, request requestForValidate, writer http.ResponseWriter) error {
 	if err := json.Unmarshal(data, request); err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.LogError(err)
+		h.logger.Println(err)
 		return err
 	}
 
@@ -59,7 +63,7 @@ func (h *Handler) bindJSON(data []byte, request requestForValidate, writer http.
 
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.LogError(err)
+		h.logger.Println(err)
 		return err
 	}
 
@@ -69,7 +73,7 @@ func (h *Handler) bindJSON(data []byte, request requestForValidate, writer http.
 
 		if err != nil {
 			writer.WriteHeader(http.StatusInternalServerError)
-			h.logger.LogError(err)
+			h.logger.Println(err)
 			return err
 		}
 
@@ -79,7 +83,7 @@ func (h *Handler) bindJSON(data []byte, request requestForValidate, writer http.
 
 		if err != nil {
 			writer.WriteHeader(http.StatusInternalServerError)
-			h.logger.LogError(err)
+			h.logger.Println(err)
 			return err
 		}
 
@@ -90,13 +94,18 @@ func (h *Handler) bindJSON(data []byte, request requestForValidate, writer http.
 }
 
 func (h *Handler) writeDomainErrorResponse(writer http.ResponseWriter, domainError error) {
-	response := createDomainErrorResponse(domainError)
+	mappedErr := domain.MapDomainError(domainError)
+	response := createDomainErrorResponse(mappedErr)
 	bytes, err := json.Marshal(&response)
 
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.LogError(err)
+		h.logger.Println(err)
 		return
+	}
+
+	if mappedErr == domain.ErrInternalError {
+		h.logger.Println(domainError)
 	}
 
 	writer.Header().Set("Content-Type", contentTypeJSON)
@@ -105,7 +114,7 @@ func (h *Handler) writeDomainErrorResponse(writer http.ResponseWriter, domainErr
 
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.LogError(err)
+		h.logger.Println(err)
 	}
 }
 
@@ -115,7 +124,7 @@ func (h *Handler) writeSuccessResponse(writer http.ResponseWriter, response inte
 
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.LogError(err)
+		h.logger.Println(err)
 		return
 	}
 
@@ -125,6 +134,6 @@ func (h *Handler) writeSuccessResponse(writer http.ResponseWriter, response inte
 
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.LogError(err)
+		h.logger.Println(err)
 	}
 }

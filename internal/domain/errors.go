@@ -8,12 +8,23 @@ var (
 	ErrNameAndPhoneAlreadyUse = errors.New("NameAndPhoneAlreadyUse")
 	ErrUserNotFound           = errors.New("UserNotFound")
 	ErrInvalidPassword        = errors.New("InvalidPassword")
-	ErrInternalError          = errors.New("InternalError")
+
+	ErrEmptyMedia    = errors.New("MediaIsEmpty")
+	ErrMediaNotFound = errors.New("MediaNotFound")
+
+	ErrInternalError = errors.New("InternalError")
 )
 
-func MapUserError(err error) error {
+func MapDomainError(err error) error {
 	switch err {
-	case ErrPhoneAlreadyUse, ErrNameAlreadyUse, ErrNameAndPhoneAlreadyUse, ErrUserNotFound, ErrInvalidPassword:
+	case
+		ErrPhoneAlreadyUse,
+		ErrNameAlreadyUse,
+		ErrNameAndPhoneAlreadyUse,
+		ErrUserNotFound,
+		ErrInvalidPassword,
+		ErrEmptyMedia,
+		ErrMediaNotFound:
 		return err
 	default:
 		return ErrInternalError

@@ -17,8 +17,14 @@ type Users interface {
 	ChangePassword(ctx context.Context, id string, password string) error
 }
 
+type Media interface {
+	CreateMedia(ctx context.Context, media domain.Media) (string, error)
+	DeleteMedia(ctx context.Context, id string) error
+}
+
 type Repositories struct {
 	Users Users
+	Media Media
 }
 
 func NewRepositories(connectionString string, dbName string) (*Repositories, error) {
@@ -43,5 +49,6 @@ func NewRepositories(connectionString string, dbName string) (*Repositories, err
 
 	return &Repositories{
 		Users: newMongoUsers(db, "users"),
+		Media: newMongoMedia(db, "media"),
 	}, nil
 }

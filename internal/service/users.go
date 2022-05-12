@@ -30,7 +30,7 @@ func (s *userService) Create(ctx context.Context, input CreateUserInput) (LoginR
 	err := s.repository.CheckNameAndPhone(ctx, input.Name, input.Phone)
 
 	if err != nil {
-		return LoginResponse{}, domain.MapUserError(err)
+		return LoginResponse{}, err
 	}
 
 	model := domain.User{
@@ -43,7 +43,7 @@ func (s *userService) Create(ctx context.Context, input CreateUserInput) (LoginR
 	userId, err := s.repository.CreateUser(ctx, model)
 
 	if err != nil {
-		return LoginResponse{}, domain.MapUserError(err)
+		return LoginResponse{}, err
 	}
 
 	tokenInput := auth.CreateTokenInput{
@@ -65,7 +65,7 @@ func (s *userService) Login(ctx context.Context, input LoginUserInput) (LoginRes
 	model, err := s.repository.GetUserByPhone(ctx, input.Phone)
 
 	if err != nil {
-		return LoginResponse{}, domain.MapUserError(err)
+		return LoginResponse{}, err
 	}
 
 	if !s.hashManager.VerifyHashedPassword(model.Password, input.Password) {
@@ -91,11 +91,11 @@ func (s *userService) ChangePassword(ctx context.Context, input ChangePasswordIn
 	model, err := s.repository.GetUserByID(ctx, input.ID)
 
 	if err != nil {
-		return LoginResponse{}, domain.MapUserError(err)
+		return LoginResponse{}, err
 	}
 
 	if err = s.repository.ChangePassword(ctx, input.ID, s.hashManager.HashPassword(input.Password)); err != nil {
-		return LoginResponse{}, domain.MapUserError(err)
+		return LoginResponse{}, err
 	}
 
 	tokenInput := auth.CreateTokenInput{

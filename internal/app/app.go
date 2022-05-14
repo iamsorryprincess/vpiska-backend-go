@@ -27,18 +27,18 @@ func Run() {
 		return
 	}
 
-	logger := log.New(logFile, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	errorLogger := log.New(logFile, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
 	configuration, err := parseConfig()
 
 	if err != nil {
-		logger.Println(err)
+		errorLogger.Println(err)
 		return
 	}
 
 	repositories, err := repository.NewRepositories(configuration.Database.ConnectionString, configuration.Database.DbName)
 
 	if err != nil {
-		logger.Println(err)
+		errorLogger.Println(err)
 		return
 	}
 
@@ -48,11 +48,11 @@ func Run() {
 	services, err := service.NewServices(repositories, passwordManager, jwtTokenManager)
 
 	if err != nil {
-		logger.Println(err)
+		errorLogger.Println(err)
 		return
 	}
 
-	handler := http.NewHandler(services, logger, configuration.Server.Port)
+	handler := http.NewHandler(services, errorLogger, configuration.Server.Port)
 	httpServer := server.NewServer(configuration.Server.Port, handler)
-	logger.Println(httpServer.Run())
+	errorLogger.Println(httpServer.Run())
 }

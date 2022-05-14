@@ -5,20 +5,28 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	v1 "github.com/iamsorryprincess/vpiska-backend-go/internal/delivery/http/v1"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func NewHandler(services *service.Services, logger *log.Logger, port int) http.Handler {
-	mux := http.NewServeMux()
+	ginEngine := gin.Default()
 
-	mux.HandleFunc("/health", func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusOK)
+	ginEngine.Use(gin.Logger())
+	ginEngine.Use(gin.Recovery())
+
+	ginEngine.GET("/health", func(context *gin.Context) {
+		context.Writer.WriteHeader(http.StatusOK)
 	})
 
 	swaggerUrl := fmt.Sprintf("http://localhost:%d/swagger/doc.json", port)
-	mux.HandleFunc("/swagger/", httpSwagger.Handler(httpSwagger.URL(swaggerUrl)))
-	handler := v1.NewHandler(services, logger)
-	return handler.InitAPI(mux)
+	swaggerHandler := httpSwagger.Handler(httpSwagger.URL(swaggerUrl))
+	ginEngine.GET("/swagger/*any", gin.WrapH(swaggerHandler))
+
+	apiRouter := ginEngine.Group("/api")
+	handler := v1.NewHandler(logger, services)
+	handler.InitAPI(apiRouter)
+	return ginEngine
 }

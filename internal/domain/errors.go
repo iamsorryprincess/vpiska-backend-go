@@ -9,13 +9,10 @@ var (
 	ErrUserNotFound           = errors.New("UserNotFound")
 	ErrInvalidPassword        = errors.New("InvalidPassword")
 
-	ErrEmptyMedia    = errors.New("MediaIsEmpty")
 	ErrMediaNotFound = errors.New("MediaNotFound")
-
-	ErrInternalError = errors.New("InternalError")
 )
 
-func MapDomainError(err error) error {
+func IsInternalError(err error) bool {
 	switch err {
 	case
 		ErrPhoneAlreadyUse,
@@ -23,10 +20,9 @@ func MapDomainError(err error) error {
 		ErrNameAndPhoneAlreadyUse,
 		ErrUserNotFound,
 		ErrInvalidPassword,
-		ErrEmptyMedia,
 		ErrMediaNotFound:
-		return err
+		return false
 	default:
-		return ErrInternalError
+		return true
 	}
 }

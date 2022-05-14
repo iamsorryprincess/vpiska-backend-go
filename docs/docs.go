@@ -124,6 +124,9 @@ const docTemplate = `{
                     "200": {
                         "description": ""
                     },
+                    "400": {
+                        "description": ""
+                    },
                     "404": {
                         "description": ""
                     }

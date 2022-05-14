@@ -1,16 +1,31 @@
 package v1
 
 import (
-	"net/http"
 	"regexp"
 
+	"github.com/gin-gonic/gin"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
 )
 
-func (h *Handler) initUsersAPI(mux *http.ServeMux) {
-	mux.HandleFunc("/api/v1/users/create", h.createUser)
-	mux.HandleFunc("/api/v1/users/login", h.loginUser)
-	mux.HandleFunc("/api/v1/users/password/change", h.changePassword)
+const (
+	phoneRegexp            = `^\d{10}\b$`
+	requiredPasswordLength = 6
+)
+
+const (
+	emptyNameError              = "NameIsEmpty"
+	emptyPhoneError             = "PhoneIsEmpty"
+	emptyPasswordError          = "PasswordIsEmpty"
+	invalidPhoneFormatError     = "PhoneRegexInvalid"
+	invalidPasswordLengthError  = "PasswordLengthInvalid"
+	invalidConfirmPasswordError = "ConfirmPasswordInvalid"
+)
+
+func (h *Handler) initUsersAPI(router *gin.RouterGroup) {
+	users := router.Group("/users")
+	users.POST("/create", h.createUser)
+	users.POST("/login", h.loginUser)
+	users.POST("/password/change", h.changePassword)
 }
 
 type loginResponse struct {
@@ -37,30 +52,39 @@ type createUserRequest struct {
 // @param        request body createUserRequest true "body"
 // @Success      200 {object} apiResponse{result=loginResponse}
 // @Router       /v1/users/create [post]
-func (h *Handler) createUser(writer http.ResponseWriter, request *http.Request) {
-	data, err := h.handlePostJSON(writer, request)
+func (h *Handler) createUser(context *gin.Context) {
+	request := createUserRequest{}
+	err := context.BindJSON(&request)
 
 	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
 		return
 	}
 
-	body := createUserRequest{}
-	err = h.bindJSON(data, &body, writer)
+	validationErrs, err := validateCreateRequest(request)
 
 	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
 		return
 	}
 
-	input := body.toServiceInput()
-	result, err := h.services.Users.Create(request.Context(), input)
-
-	if err != nil {
-		h.writeDomainErrorResponse(writer, err)
+	if validationErrs != nil {
+		writeValidationErrResponse(validationErrs, context)
 		return
 	}
 
-	response := mapToResponse(result)
-	h.writeSuccessResponse(writer, response)
+	result, err := h.services.Users.Create(context.Request.Context(), service.CreateUserInput{
+		Name:     request.Name,
+		Phone:    request.Phone,
+		Password: request.Password,
+	})
+
+	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
+		return
+	}
+
+	writeResponse(toLoginResponse(result), context)
 }
 
 type loginUserRequest struct {
@@ -77,30 +101,38 @@ type loginUserRequest struct {
 // @param        request body loginUserRequest true "body"
 // @Success      200 {object} apiResponse{result=loginResponse}
 // @Router       /v1/users/login [post]
-func (h *Handler) loginUser(writer http.ResponseWriter, request *http.Request) {
-	data, err := h.handlePostJSON(writer, request)
+func (h *Handler) loginUser(context *gin.Context) {
+	request := loginUserRequest{}
+	err := context.BindJSON(&request)
 
 	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
 		return
 	}
 
-	body := loginUserRequest{}
-	err = h.bindJSON(data, &body, writer)
+	validationErrs, err := validateLoginRequest(request)
 
 	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
 		return
 	}
 
-	input := body.toServiceInput()
-	result, err := h.services.Users.Login(request.Context(), input)
-
-	if err != nil {
-		h.writeDomainErrorResponse(writer, err)
+	if validationErrs != nil {
+		writeValidationErrResponse(validationErrs, context)
 		return
 	}
 
-	response := mapToResponse(result)
-	h.writeSuccessResponse(writer, response)
+	result, err := h.services.Users.Login(context.Request.Context(), service.LoginUserInput{
+		Phone:    request.Phone,
+		Password: request.Password,
+	})
+
+	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
+		return
+	}
+
+	writeResponse(toLoginResponse(result), context)
 }
 
 type changePasswordRequest struct {
@@ -118,127 +150,41 @@ type changePasswordRequest struct {
 // @param        request body changePasswordRequest true "body"
 // @Success      200 {object} apiResponse{result=loginResponse}
 // @Router       /v1/users/password/change [post]
-func (h *Handler) changePassword(writer http.ResponseWriter, request *http.Request) {
-	data, err := h.handlePostJSON(writer, request)
+func (h *Handler) changePassword(context *gin.Context) {
+	request := changePasswordRequest{}
+	err := context.BindJSON(&request)
 
 	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
 		return
 	}
 
-	body := changePasswordRequest{}
-	err = h.bindJSON(data, &body, writer)
+	validationErrs, err := validateChangePasswordRequest(request)
 
 	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
 		return
 	}
 
-	input := body.toServiceInput()
-	result, err := h.services.Users.ChangePassword(request.Context(), input)
-
-	if err != nil {
-		h.writeDomainErrorResponse(writer, err)
+	if validationErrs != nil {
+		writeValidationErrResponse(validationErrs, context)
 		return
 	}
 
-	response := mapToResponse(result)
-	h.writeSuccessResponse(writer, response)
+	result, err := h.services.Users.ChangePassword(context.Request.Context(), service.ChangePasswordInput{
+		ID:       request.ID,
+		Password: request.Password,
+	})
+
+	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
+		return
+	}
+
+	writeResponse(toLoginResponse(result), context)
 }
 
-func (r *createUserRequest) validate() ([]string, error) {
-	var validationErrors []string
-
-	if r.Name == "" {
-		validationErrors = append(validationErrors, emptyNameError)
-	}
-
-	if r.Phone == "" {
-		validationErrors = append(validationErrors, emptyPhoneError)
-	} else if matched, err := regexp.MatchString(phoneRegexp, r.Phone); err != nil {
-		return nil, err
-	} else if !matched {
-		validationErrors = append(validationErrors, invalidPhoneFormatError)
-	}
-
-	if r.Password == "" {
-		validationErrors = append(validationErrors, emptyPasswordError)
-	} else if len(r.Password) < requiredPasswordLength {
-		validationErrors = append(validationErrors, invalidPasswordLengthError)
-	}
-
-	if r.Password != r.ConfirmPassword {
-		validationErrors = append(validationErrors, invalidConfirmPasswordError)
-	}
-
-	return validationErrors, nil
-}
-
-func (r *createUserRequest) toServiceInput() service.CreateUserInput {
-	return service.CreateUserInput{
-		Name:     r.Name,
-		Phone:    r.Phone,
-		Password: r.Password,
-	}
-}
-
-func (r *loginUserRequest) validate() ([]string, error) {
-	var validationErrors []string
-
-	if r.Phone == "" {
-		validationErrors = append(validationErrors, emptyPhoneError)
-	} else if matched, err := regexp.MatchString(phoneRegexp, r.Phone); err != nil {
-		return nil, err
-	} else if !matched {
-		validationErrors = append(validationErrors, invalidPhoneFormatError)
-	}
-
-	if r.Password == "" {
-		validationErrors = append(validationErrors, emptyPasswordError)
-	} else if len(r.Password) < requiredPasswordLength {
-		validationErrors = append(validationErrors, invalidPasswordLengthError)
-	}
-
-	return validationErrors, nil
-}
-
-func (r *loginUserRequest) toServiceInput() service.LoginUserInput {
-	return service.LoginUserInput{
-		Phone:    r.Phone,
-		Password: r.Password,
-	}
-}
-
-func (r *changePasswordRequest) validate() ([]string, error) {
-	var validationErrors []string
-
-	if r.ID == "" {
-		validationErrors = append(validationErrors, emptyIDError)
-	} else if matched, err := regexp.MatchString(idRegexp, r.ID); err != nil {
-		return nil, err
-	} else if !matched {
-		validationErrors = append(validationErrors, invalidIdFormatError)
-	}
-
-	if r.Password == "" {
-		validationErrors = append(validationErrors, emptyPasswordError)
-	} else if len(r.Password) < requiredPasswordLength {
-		validationErrors = append(validationErrors, invalidPasswordLengthError)
-	}
-
-	if r.Password != r.ConfirmPassword {
-		validationErrors = append(validationErrors, invalidConfirmPasswordError)
-	}
-
-	return validationErrors, nil
-}
-
-func (r *changePasswordRequest) toServiceInput() service.ChangePasswordInput {
-	return service.ChangePasswordInput{
-		ID:       r.ID,
-		Password: r.Password,
-	}
-}
-
-func mapToResponse(response service.LoginResponse) loginResponse {
+func toLoginResponse(response service.LoginResponse) loginResponse {
 	return loginResponse{
 		ID:          response.ID,
 		Name:        response.Name,
@@ -246,4 +192,76 @@ func mapToResponse(response service.LoginResponse) loginResponse {
 		ImageID:     response.ImageID,
 		AccessToken: response.AccessToken,
 	}
+}
+
+func validateCreateRequest(request createUserRequest) ([]string, error) {
+	var validationErrors []string
+
+	if request.Name == "" {
+		validationErrors = append(validationErrors, emptyNameError)
+	}
+
+	if request.Phone == "" {
+		validationErrors = append(validationErrors, emptyPhoneError)
+	} else if matched, err := regexp.MatchString(phoneRegexp, request.Phone); err != nil {
+		return nil, err
+	} else if !matched {
+		validationErrors = append(validationErrors, invalidPhoneFormatError)
+	}
+
+	if request.Password == "" {
+		validationErrors = append(validationErrors, emptyPasswordError)
+	} else if len(request.Password) < requiredPasswordLength {
+		validationErrors = append(validationErrors, invalidPasswordLengthError)
+	}
+
+	if request.Password != request.ConfirmPassword {
+		validationErrors = append(validationErrors, invalidConfirmPasswordError)
+	}
+
+	return validationErrors, nil
+}
+
+func validateLoginRequest(request loginUserRequest) ([]string, error) {
+	var validationErrors []string
+
+	if request.Phone == "" {
+		validationErrors = append(validationErrors, emptyPhoneError)
+	} else if matched, err := regexp.MatchString(phoneRegexp, request.Phone); err != nil {
+		return nil, err
+	} else if !matched {
+		validationErrors = append(validationErrors, invalidPhoneFormatError)
+	}
+
+	if request.Password == "" {
+		validationErrors = append(validationErrors, emptyPasswordError)
+	} else if len(request.Password) < requiredPasswordLength {
+		validationErrors = append(validationErrors, invalidPasswordLengthError)
+	}
+
+	return validationErrors, nil
+}
+
+func validateChangePasswordRequest(request changePasswordRequest) ([]string, error) {
+	var validationErrors []string
+
+	if request.ID == "" {
+		validationErrors = append(validationErrors, emptyIDError)
+	} else if matched, err := regexp.MatchString(idRegexp, request.ID); err != nil {
+		return nil, err
+	} else if !matched {
+		validationErrors = append(validationErrors, invalidIdFormatError)
+	}
+
+	if request.Password == "" {
+		validationErrors = append(validationErrors, emptyPasswordError)
+	} else if len(request.Password) < requiredPasswordLength {
+		validationErrors = append(validationErrors, invalidPasswordLengthError)
+	}
+
+	if request.Password != request.ConfirmPassword {
+		validationErrors = append(validationErrors, invalidConfirmPasswordError)
+	}
+
+	return validationErrors, nil
 }

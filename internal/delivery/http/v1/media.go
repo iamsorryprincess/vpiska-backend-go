@@ -3,19 +3,17 @@ package v1
 import (
 	"fmt"
 	"net/http"
-	"strings"
+	"regexp"
 
+	"github.com/gin-gonic/gin"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
 )
 
-const getFileUrl = "/api/v1/media/"
-const getFileMetadataUrl = "/api/v1/media/metadata/"
-
-func (h *Handler) initMediaAPI(mux *http.ServeMux) {
-	mux.HandleFunc("/api/v1/media", h.uploadFile)
-	mux.HandleFunc(getFileUrl, h.getFile)
-	mux.HandleFunc(getFileMetadataUrl, h.getFileMetadata)
+func (h *Handler) initMediaAPI(router *gin.RouterGroup) {
+	router.POST("/media", h.uploadMedia)
+	router.GET("/media/:id", h.getMedia)
+	router.GET("/media/metadata/:id", h.getMetadata)
 }
 
 // UploadMedia godoc
@@ -27,35 +25,41 @@ func (h *Handler) initMediaAPI(mux *http.ServeMux) {
 // @param        file formData file true "file"
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/media [post]
-func (h *Handler) uploadFile(writer http.ResponseWriter, request *http.Request) {
-	if request.Method != http.MethodPost {
-		h.writeErrorResponse(writer, errInvalidMethod)
+func (h *Handler) uploadMedia(context *gin.Context) {
+	header, err := context.FormFile("file")
+
+	if err != nil {
+		if err.Error() == emptyFormFileError {
+			response := createDomainErrorResponse(errEmptyMedia)
+			context.JSON(http.StatusOK, response)
+			return
+		}
+
+		writeErrorResponse(err, h.errorLogger, context)
 		return
 	}
 
-	file, header, err := h.getFormFile(writer, request, "file")
+	file, err := header.Open()
 
 	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
 		return
 	}
 
 	defer file.Close()
-
-	input := &service.CreateMediaInput{
+	mediaId, err := h.services.Media.Create(context.Request.Context(), &service.CreateMediaInput{
 		Name:        header.Filename,
 		ContentType: header.Header.Get("Content-Type"),
 		Size:        header.Size,
 		File:        file,
-	}
-
-	mediaId, err := h.services.Media.Create(request.Context(), input)
+	})
 
 	if err != nil {
-		h.writeDomainErrorResponse(writer, err)
+		writeErrorResponse(err, h.errorLogger, context)
 		return
 	}
 
-	h.writeSuccessResponse(writer, mediaId)
+	writeResponse(mediaId, context)
 }
 
 // GetMedia godoc
@@ -65,31 +69,40 @@ func (h *Handler) uploadFile(writer http.ResponseWriter, request *http.Request) 
 // @Content-Type */*
 // @param        id   path      string  true  "media ID"
 // @Success      200
+// @Failure      400
 // @Failure      404
 // @Router       /v1/media/{id} [get]
-func (h *Handler) getFile(writer http.ResponseWriter, request *http.Request) {
-	if request.Method != http.MethodGet {
-		writer.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	mediaId := strings.TrimPrefix(request.RequestURI, getFileUrl)
+func (h *Handler) getMedia(context *gin.Context) {
+	mediaId := context.Param("id")
 
 	if mediaId == "" {
-		h.logger.Println("empty string")
-		writer.WriteHeader(http.StatusBadRequest)
+		context.Writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	mediaData, err := h.services.Media.GetFile(request.Context(), mediaId)
+	isMatched, err := regexp.MatchString(idRegexp, mediaId)
+
+	if err != nil {
+		h.errorLogger.Println(err)
+		context.Writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if !isMatched {
+		context.Writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	mediaData, err := h.services.Media.GetFile(context.Request.Context(), mediaId)
 
 	if err != nil {
 		if err == domain.ErrMediaNotFound {
-			writer.WriteHeader(http.StatusNotFound)
+			context.Writer.WriteHeader(http.StatusNotFound)
 			return
 		}
-		h.logger.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
+
+		h.errorLogger.Println(err)
+		context.Writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -98,19 +111,19 @@ func (h *Handler) getFile(writer http.ResponseWriter, request *http.Request) {
 	_, err = mediaData.File.Read(bytes)
 
 	if err != nil {
-		h.logger.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
+		h.errorLogger.Println(err)
+		context.Writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	writer.Header().Set("Content-Type", mediaData.ContentType)
-	writer.Header().Set("Content-Length", fmt.Sprintf("%d", mediaData.Size))
-	writer.WriteHeader(http.StatusOK)
-	_, err = writer.Write(bytes)
+	context.Writer.Header().Set("Content-Type", mediaData.ContentType)
+	context.Writer.Header().Set("Content-Length", fmt.Sprintf("%d", mediaData.Size))
+	context.Writer.WriteHeader(http.StatusOK)
+	_, err = context.Writer.Write(bytes)
 
 	if err != nil {
-		h.logger.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
+		h.errorLogger.Println(err)
+		context.Writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 }
@@ -131,33 +144,39 @@ type fileMetadataResponse struct {
 // @param        id   path      string  true  "media ID"
 // @Success      200 {object} apiResponse{result=fileMetadataResponse}
 // @Router       /v1/media/metadata/{id} [get]
-func (h *Handler) getFileMetadata(writer http.ResponseWriter, request *http.Request) {
-	if request.Method != http.MethodGet {
-		h.writeErrorResponse(writer, errInvalidMethod)
-		return
-	}
-
-	mediaId := strings.TrimPrefix(request.RequestURI, getFileMetadataUrl)
+func (h *Handler) getMetadata(context *gin.Context) {
+	mediaId := context.Param("id")
 
 	if mediaId == "" {
-		h.logger.Println("empty string")
-		h.writeErrorResponse(writer, errEmptyId)
+		response := createDomainErrorResponse(errEmptyId)
+		context.JSON(http.StatusOK, response)
 		return
 	}
 
-	fileMetadata, err := h.services.Media.GetMetadata(request.Context(), mediaId)
+	isMatched, err := regexp.MatchString(idRegexp, mediaId)
 
 	if err != nil {
-		h.writeDomainErrorResponse(writer, err)
+		writeErrorResponse(err, h.errorLogger, context)
 		return
 	}
 
-	response := fileMetadataResponse{
-		ID:          fileMetadata.ID,
-		Name:        fileMetadata.Name,
-		Size:        fileMetadata.Size,
-		ContentType: fileMetadata.ContentType,
+	if !isMatched {
+		response := createDomainErrorResponse(errInvalidId)
+		context.JSON(http.StatusOK, response)
+		return
 	}
 
-	h.writeSuccessResponse(writer, response)
+	metadata, err := h.services.Media.GetMetadata(context.Request.Context(), mediaId)
+
+	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
+		return
+	}
+
+	writeResponse(fileMetadataResponse{
+		ID:          metadata.ID,
+		Name:        metadata.Name,
+		Size:        metadata.Size,
+		ContentType: metadata.ContentType,
+	}, context)
 }

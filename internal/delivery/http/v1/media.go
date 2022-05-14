@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -8,20 +9,13 @@ import (
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
 )
 
-const multipart = "multipart/form-data"
+const getFileUrl = "/api/v1/media/"
+const getFileMetadataUrl = "/api/v1/media/metadata/"
 
 func (h *Handler) initMediaAPI(mux *http.ServeMux) {
-	mux.HandleFunc("/api/v1/media", h.routeMediaHandle)
-}
-
-func (h *Handler) routeMediaHandle(writer http.ResponseWriter, request *http.Request) {
-	switch request.Method {
-	case http.MethodPost:
-		h.uploadFile(writer, request)
-		return
-	default:
-		writer.WriteHeader(http.StatusMethodNotAllowed)
-	}
+	mux.HandleFunc("/api/v1/media", h.uploadFile)
+	mux.HandleFunc(getFileUrl, h.getFile)
+	mux.HandleFunc(getFileMetadataUrl, h.getFileMetadata)
 }
 
 // UploadMedia godoc
@@ -34,29 +28,14 @@ func (h *Handler) routeMediaHandle(writer http.ResponseWriter, request *http.Req
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/media [post]
 func (h *Handler) uploadFile(writer http.ResponseWriter, request *http.Request) {
-	if !strings.Contains(request.Header.Get("Content-Type"), multipart) {
-		writer.WriteHeader(http.StatusUnsupportedMediaType)
+	if request.Method != http.MethodPost {
+		h.writeErrorResponse(writer, errInvalidMethod)
 		return
 	}
 
-	err := request.ParseMultipartForm(10 << 20)
+	file, header, err := h.getFormFile(writer, request, "file")
 
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.Println(err)
-		return
-	}
-
-	if request.MultipartForm.File["file"] == nil {
-		h.writeDomainErrorResponse(writer, domain.ErrEmptyMedia)
-		return
-	}
-
-	file, header, err := request.FormFile("file")
-
-	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		h.logger.Println(err)
 		return
 	}
 
@@ -77,4 +56,108 @@ func (h *Handler) uploadFile(writer http.ResponseWriter, request *http.Request) 
 	}
 
 	h.writeSuccessResponse(writer, mediaId)
+}
+
+// GetMedia godoc
+// @Summary      Получить медиафайл
+// @Tags         media
+// @Accept       */*
+// @Content-Type */*
+// @param        id   path      string  true  "media ID"
+// @Success      200
+// @Failure      404
+// @Router       /v1/media/{id} [get]
+func (h *Handler) getFile(writer http.ResponseWriter, request *http.Request) {
+	if request.Method != http.MethodGet {
+		writer.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	mediaId := strings.TrimPrefix(request.RequestURI, getFileUrl)
+
+	if mediaId == "" {
+		h.logger.Println("empty string")
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	mediaData, err := h.services.Media.GetFile(request.Context(), mediaId)
+
+	if err != nil {
+		if err == domain.ErrMediaNotFound {
+			writer.WriteHeader(http.StatusNotFound)
+			return
+		}
+		h.logger.Println(err)
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	defer mediaData.File.Close()
+	bytes := make([]byte, mediaData.Size)
+	_, err = mediaData.File.Read(bytes)
+
+	if err != nil {
+		h.logger.Println(err)
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	writer.Header().Set("Content-Type", mediaData.ContentType)
+	writer.Header().Set("Content-Length", fmt.Sprintf("%d", mediaData.Size))
+	writer.WriteHeader(http.StatusOK)
+	_, err = writer.Write(bytes)
+
+	if err != nil {
+		h.logger.Println(err)
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
+type fileMetadataResponse struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Size        int64  `json:"size"`
+	ContentType string `json:"contentType"`
+}
+
+// ChangePassword godoc
+// @Summary      Получить метаинформацию о файле
+// @Tags         media
+// @Accept       */*
+// @Produce      json
+// @Content-Type application/json
+// @param        id   path      string  true  "media ID"
+// @Success      200 {object} apiResponse{result=fileMetadataResponse}
+// @Router       /v1/media/metadata/{id} [get]
+func (h *Handler) getFileMetadata(writer http.ResponseWriter, request *http.Request) {
+	if request.Method != http.MethodGet {
+		h.writeErrorResponse(writer, errInvalidMethod)
+		return
+	}
+
+	mediaId := strings.TrimPrefix(request.RequestURI, getFileMetadataUrl)
+
+	if mediaId == "" {
+		h.logger.Println("empty string")
+		h.writeErrorResponse(writer, errEmptyId)
+		return
+	}
+
+	fileMetadata, err := h.services.Media.GetMetadata(request.Context(), mediaId)
+
+	if err != nil {
+		h.writeDomainErrorResponse(writer, err)
+		return
+	}
+
+	response := fileMetadataResponse{
+		ID:          fileMetadata.ID,
+		Name:        fileMetadata.Name,
+		Size:        fileMetadata.Size,
+		ContentType: fileMetadata.ContentType,
+	}
+
+	h.writeSuccessResponse(writer, response)
 }

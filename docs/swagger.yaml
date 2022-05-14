@@ -35,6 +35,17 @@ definitions:
       errorCode:
         type: string
     type: object
+  v1.fileMetadataResponse:
+    properties:
+      contentType:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      size:
+        type: integer
+    type: object
   v1.loginResponse:
     properties:
       accessToken:
@@ -84,6 +95,49 @@ paths:
                   type: string
               type: object
       summary: Загрузить медиафайл
+      tags:
+      - media
+  /v1/media/{id}:
+    get:
+      consumes:
+      - '*/*'
+      parameters:
+      - description: media ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+        "404":
+          description: ""
+      summary: Получить медиафайл
+      tags:
+      - media
+  /v1/media/metadata/{id}:
+    get:
+      consumes:
+      - '*/*'
+      parameters:
+      - description: media ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.apiResponse'
+            - properties:
+                result:
+                  $ref: '#/definitions/v1.fileMetadataResponse'
+              type: object
+      summary: Получить метаинформацию о файле
       tags:
       - media
   /v1/users/create:

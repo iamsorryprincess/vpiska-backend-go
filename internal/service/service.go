@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"io"
+	"os"
+	"time"
 
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository"
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
@@ -46,8 +48,24 @@ type CreateMediaInput struct {
 	File        io.Reader
 }
 
+type FileMetadata struct {
+	ID               string
+	Name             string
+	ContentType      string
+	Size             int64
+	LastModifiedDate time.Time
+}
+
+type FileData struct {
+	ContentType string
+	Size        int64
+	File        *os.File
+}
+
 type Media interface {
 	Create(ctx context.Context, input *CreateMediaInput) (string, error)
+	GetMetadata(ctx context.Context, id string) (FileMetadata, error)
+	GetFile(ctx context.Context, id string) (*FileData, error)
 }
 
 type Services struct {

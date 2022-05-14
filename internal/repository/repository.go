@@ -18,6 +18,7 @@ type Users interface {
 }
 
 type Media interface {
+	GetMedia(ctx context.Context, id string) (domain.Media, error)
 	CreateMedia(ctx context.Context, media domain.Media) (string, error)
 	DeleteMedia(ctx context.Context, id string) error
 }

@@ -19,6 +19,20 @@ func newMongoMedia(db *mongo.Database, collectionName string) Media {
 	}
 }
 
+func (r mediaRepository) GetMedia(ctx context.Context, id string) (domain.Media, error) {
+	filter := bson.D{{"_id", id}}
+	media := domain.Media{}
+
+	if err := r.db.FindOne(ctx, filter).Decode(&media); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return media, domain.ErrMediaNotFound
+		}
+		return media, err
+	}
+
+	return media, nil
+}
+
 func (r *mediaRepository) CreateMedia(ctx context.Context, media domain.Media) (string, error) {
 	media.ID = uuid.New().String()
 	_, err := r.db.InsertOne(ctx, media)

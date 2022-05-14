@@ -1,8 +1,6 @@
 package v1
 
-import (
-	"errors"
-)
+import "errors"
 
 const (
 	idRegexp               = `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`
@@ -21,12 +19,7 @@ const (
 	invalidConfirmPasswordError = "ConfirmPasswordInvalid"
 )
 
-var (
-	contentTypeJSON       = "application/json"
-	errInvalidMethod      = errors.New("invalid method")
-	errInvalidContentType = errors.New("invalid Content-Type")
-	errInvalidRequest     = errors.New("invalid request")
-)
+var errEmptyId = errors.New("IdIsEmpty")
 
 type errorResponse struct {
 	ErrorCode string `json:"errorCode"`

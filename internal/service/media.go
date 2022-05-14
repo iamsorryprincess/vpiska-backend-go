@@ -59,6 +59,67 @@ func (s *mediaService) Create(ctx context.Context, input *CreateMediaInput) (str
 	return mediaId, nil
 }
 
+func (s *mediaService) GetMetadata(ctx context.Context, id string) (FileMetadata, error) {
+	media, err := s.repository.GetMedia(ctx, id)
+
+	if err != nil {
+		return FileMetadata{}, err
+	}
+
+	metadata := FileMetadata{
+		ID:               media.ID,
+		Name:             media.Name,
+		ContentType:      media.ContentType,
+		Size:             media.Size,
+		LastModifiedDate: media.LastModifiedDate,
+	}
+
+	return metadata, nil
+}
+
+func (s *mediaService) GetFile(ctx context.Context, id string) (*FileData, error) {
+	metadata, err := s.repository.GetMedia(ctx, id)
+	filename := path + "/" + id
+
+	if err != nil {
+		if err == domain.ErrMediaNotFound {
+			fileErr := os.Remove(filename)
+
+			if os.IsNotExist(fileErr) {
+				return nil, err
+			}
+
+			return nil, fileErr
+		}
+
+		return nil, err
+	}
+
+	file, err := os.OpenFile(filename, os.O_RDONLY, 0777)
+
+	if err != nil {
+		if os.IsNotExist(err) {
+			repoErr := s.repository.DeleteMedia(ctx, id)
+
+			if repoErr != nil {
+				return nil, repoErr
+			}
+
+			return nil, domain.ErrMediaNotFound
+		}
+
+		return nil, err
+	}
+
+	result := &FileData{
+		ContentType: metadata.ContentType,
+		Size:        metadata.Size,
+		File:        file,
+	}
+
+	return result, nil
+}
+
 func initFileDir() error {
 	_, err := os.Stat(path)
 

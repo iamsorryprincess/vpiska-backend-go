@@ -51,6 +51,77 @@
                 }
             }
         },
+        "/v1/media/metadata/{id}": {
+            "get": {
+                "consumes": [
+                    "*/*"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "media"
+                ],
+                "summary": "Получить метаинформацию о файле",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/v1.fileMetadataResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/media/{id}": {
+            "get": {
+                "consumes": [
+                    "*/*"
+                ],
+                "tags": [
+                    "media"
+                ],
+                "summary": "Получить медиафайл",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/v1/users/create": {
             "post": {
                 "consumes": [
@@ -239,6 +310,23 @@
             "properties": {
                 "errorCode": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.fileMetadataResponse": {
+            "type": "object",
+            "properties": {
+                "contentType": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
                 }
             }
         },

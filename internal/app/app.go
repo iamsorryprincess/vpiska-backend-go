@@ -3,6 +3,7 @@ package app
 import (
 	"log"
 	"os"
+	"time"
 
 	_ "github.com/iamsorryprincess/vpiska-backend-go/docs"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/delivery/http"
@@ -17,6 +18,10 @@ import (
 // @version         1.0
 // @description     API vpiska.ru
 // @BasePath  /api
+
+// @securityDefinitions.apikey UserAuth
+// @in header
+// @name Authorization
 
 func Run() {
 	logFile, err := os.OpenFile("logs.txt", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
@@ -42,7 +47,8 @@ func Run() {
 		return
 	}
 
-	jwtTokenManager := auth.NewJwtManager()
+	jwtDuration := time.Hour * 24 * 3
+	jwtTokenManager := auth.NewJwtManager(configuration.JWT.Key, configuration.JWT.Issuer, configuration.JWT.Audience, jwtDuration)
 	passwordManager := hash.NewPasswordHashManager()
 
 	services, err := service.NewServices(repositories, passwordManager, jwtTokenManager)
@@ -52,7 +58,7 @@ func Run() {
 		return
 	}
 
-	handler := http.NewHandler(services, errorLogger, configuration.Server.Port)
+	handler := http.NewHandler(services, errorLogger, jwtTokenManager, configuration.Server.Port)
 	httpServer := server.NewServer(configuration.Server.Port, handler)
 	errorLogger.Println(httpServer.Run())
 }

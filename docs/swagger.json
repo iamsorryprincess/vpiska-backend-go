@@ -217,6 +217,11 @@
         },
         "/v1/users/password/change": {
             "post": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -281,9 +286,6 @@
             "type": "object",
             "properties": {
                 "confirmPassword": {
-                    "type": "string"
-                },
-                "id": {
                     "type": "string"
                 },
                 "password": {
@@ -363,6 +365,13 @@
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "UserAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }

@@ -4,3 +4,9 @@ server:
 database:
   connectionString: "mongodb://localhost:27017"
   dbName: "vpiska"
+
+jwt:
+  key: "vpiska_secretkey!123"
+  issuer: "VpiskaServer"
+  audience: "VpiskaClient"
+  lifetimeDays: 3

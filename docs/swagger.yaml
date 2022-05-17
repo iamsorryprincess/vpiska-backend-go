@@ -14,8 +14,6 @@ definitions:
     properties:
       confirmPassword:
         type: string
-      id:
-        type: string
       password:
         type: string
     type: object
@@ -217,7 +215,14 @@ paths:
                 result:
                   $ref: '#/definitions/v1.loginResponse'
               type: object
+      security:
+      - UserAuth: []
       summary: Изменить пароль
       tags:
       - users
+securityDefinitions:
+  UserAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

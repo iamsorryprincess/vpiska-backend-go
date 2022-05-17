@@ -11,9 +11,10 @@ import (
 )
 
 func (h *Handler) initMediaAPI(router *gin.RouterGroup) {
-	router.POST("/media", h.uploadMedia)
-	router.GET("/media/:id", h.getMedia)
-	router.GET("/media/metadata/:id", h.getMetadata)
+	media := router.Group("/media")
+	media.POST("", h.uploadMedia)
+	media.GET("/:id", h.getMedia)
+	media.GET("/metadata/:id", h.getMetadata)
 }
 
 // UploadMedia godoc

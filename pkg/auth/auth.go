@@ -1,11 +1,16 @@
 package auth
 
-type CreateTokenInput struct {
+import "errors"
+
+var ErrInvalidToken = errors.New("unauthorized")
+
+type TokenData struct {
 	ID      string
 	Name    string
 	ImageID string
 }
 
 type TokenManager interface {
-	GetAccessToken(input CreateTokenInput) string
+	GetAccessToken(input TokenData) (string, error)
+	ParseToken(token string) (TokenData, error)
 }

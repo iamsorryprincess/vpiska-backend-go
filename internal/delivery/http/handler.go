@@ -8,10 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 	v1 "github.com/iamsorryprincess/vpiska-backend-go/internal/delivery/http/v1"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-func NewHandler(services *service.Services, logger *log.Logger, port int) http.Handler {
+func NewHandler(services *service.Services, logger *log.Logger, tokenManager auth.TokenManager, port int) http.Handler {
 	ginEngine := gin.Default()
 
 	ginEngine.Use(gin.Logger())
@@ -26,7 +27,7 @@ func NewHandler(services *service.Services, logger *log.Logger, port int) http.H
 	ginEngine.GET("/swagger/*any", gin.WrapH(swaggerHandler))
 
 	apiRouter := ginEngine.Group("/api")
-	handler := v1.NewHandler(logger, services)
+	handler := v1.NewHandler(logger, services, tokenManager)
 	handler.InitAPI(apiRouter)
 	return ginEngine
 }

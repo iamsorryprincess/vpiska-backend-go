@@ -25,7 +25,8 @@ func (h *Handler) initUsersAPI(router *gin.RouterGroup) {
 	users := router.Group("/users")
 	users.POST("/create", h.createUser)
 	users.POST("/login", h.loginUser)
-	users.POST("/password/change", h.changePassword)
+	authenticated := users.Group("/", h.jwtAuth)
+	authenticated.POST("/password/change", h.changePassword)
 }
 
 type loginResponse struct {
@@ -136,13 +137,13 @@ func (h *Handler) loginUser(context *gin.Context) {
 }
 
 type changePasswordRequest struct {
-	ID              string `json:"id"`
 	Password        string `json:"password"`
 	ConfirmPassword string `json:"confirmPassword"`
 }
 
 // ChangePassword godoc
 // @Summary      Изменить пароль
+// @Security     UserAuth
 // @Tags         users
 // @Accept       json
 // @Produce      json
@@ -172,7 +173,7 @@ func (h *Handler) changePassword(context *gin.Context) {
 	}
 
 	result, err := h.services.Users.ChangePassword(context.Request.Context(), service.ChangePasswordInput{
-		ID:       request.ID,
+		ID:       context.GetString("UserID"),
 		Password: request.Password,
 	})
 
@@ -244,14 +245,6 @@ func validateLoginRequest(request loginUserRequest) ([]string, error) {
 
 func validateChangePasswordRequest(request changePasswordRequest) ([]string, error) {
 	var validationErrors []string
-
-	if request.ID == "" {
-		validationErrors = append(validationErrors, emptyIDError)
-	} else if matched, err := regexp.MatchString(idRegexp, request.ID); err != nil {
-		return nil, err
-	} else if !matched {
-		validationErrors = append(validationErrors, invalidIdFormatError)
-	}
 
 	if request.Password == "" {
 		validationErrors = append(validationErrors, emptyPasswordError)

@@ -46,10 +46,10 @@ func (s *userService) Create(ctx context.Context, input CreateUserInput) (LoginR
 		return LoginResponse{}, err
 	}
 
-	tokenInput := auth.CreateTokenInput{
-		ID:      userId,
-		Name:    model.Name,
-		ImageID: model.ImageID,
+	token, err := s.generateToken(userId, model.Name, model.ImageID)
+
+	if err != nil {
+		return LoginResponse{}, err
 	}
 
 	return LoginResponse{
@@ -57,7 +57,7 @@ func (s *userService) Create(ctx context.Context, input CreateUserInput) (LoginR
 		Name:        model.Name,
 		Phone:       model.Phone,
 		ImageID:     model.ImageID,
-		AccessToken: s.auth.GetAccessToken(tokenInput),
+		AccessToken: token,
 	}, nil
 }
 
@@ -72,10 +72,10 @@ func (s *userService) Login(ctx context.Context, input LoginUserInput) (LoginRes
 		return LoginResponse{}, domain.ErrInvalidPassword
 	}
 
-	tokenInput := auth.CreateTokenInput{
-		ID:      model.ID,
-		Name:    model.Name,
-		ImageID: model.ImageID,
+	token, err := s.generateToken(model.ID, model.Name, model.ImageID)
+
+	if err != nil {
+		return LoginResponse{}, err
 	}
 
 	return LoginResponse{
@@ -83,7 +83,7 @@ func (s *userService) Login(ctx context.Context, input LoginUserInput) (LoginRes
 		Name:        model.Name,
 		Phone:       model.Phone,
 		ImageID:     model.ImageID,
-		AccessToken: s.auth.GetAccessToken(tokenInput),
+		AccessToken: token,
 	}, nil
 }
 
@@ -98,10 +98,10 @@ func (s *userService) ChangePassword(ctx context.Context, input ChangePasswordIn
 		return LoginResponse{}, err
 	}
 
-	tokenInput := auth.CreateTokenInput{
-		ID:      model.ID,
-		Name:    model.Name,
-		ImageID: model.ImageID,
+	token, err := s.generateToken(model.ID, model.Name, model.ImageID)
+
+	if err != nil {
+		return LoginResponse{}, err
 	}
 
 	return LoginResponse{
@@ -109,6 +109,15 @@ func (s *userService) ChangePassword(ctx context.Context, input ChangePasswordIn
 		Name:        model.Name,
 		Phone:       model.Phone,
 		ImageID:     model.ImageID,
-		AccessToken: s.auth.GetAccessToken(tokenInput),
+		AccessToken: token,
 	}, nil
+}
+
+func (s *userService) generateToken(id string, name string, imageId string) (string, error) {
+	tokenInput := auth.TokenData{
+		ID:      id,
+		Name:    name,
+		ImageID: imageId,
+	}
+	return s.auth.GetAccessToken(tokenInput)
 }

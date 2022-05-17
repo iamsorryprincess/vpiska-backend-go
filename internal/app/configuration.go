@@ -14,6 +14,12 @@ type Configuration struct {
 		ConnectionString string `yaml:"connectionString"`
 		DbName           string `yaml:"dbName"`
 	} `yaml:"database"`
+	JWT struct {
+		Key          string `yaml:"key"`
+		Issuer       string `yaml:"issuer"`
+		Audience     string `yaml:"audience"`
+		LifetimeDays int    `yaml:"lifetimeDays"`
+	} `yaml:"jwt"`
 }
 
 func parseConfig() (*Configuration, error) {

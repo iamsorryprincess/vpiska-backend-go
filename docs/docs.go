@@ -225,6 +225,11 @@ const docTemplate = `{
         },
         "/v1/users/password/change": {
             "post": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -289,9 +294,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "confirmPassword": {
-                    "type": "string"
-                },
-                "id": {
                     "type": "string"
                 },
                 "password": {
@@ -371,6 +373,13 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "UserAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

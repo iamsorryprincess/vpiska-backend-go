@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
 )
 
 const (
@@ -22,14 +23,16 @@ var (
 )
 
 type Handler struct {
-	errorLogger *log.Logger
-	services    *service.Services
+	errorLogger  *log.Logger
+	services     *service.Services
+	tokenManager auth.TokenManager
 }
 
-func NewHandler(errorLogger *log.Logger, services *service.Services) *Handler {
+func NewHandler(errorLogger *log.Logger, services *service.Services, tokenManager auth.TokenManager) *Handler {
 	return &Handler{
-		errorLogger: errorLogger,
-		services:    services,
+		errorLogger:  errorLogger,
+		services:     services,
+		tokenManager: tokenManager,
 	}
 }
 

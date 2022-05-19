@@ -45,6 +45,22 @@ func (s *mediaService) Create(ctx context.Context, input *CreateMediaInput) (str
 	return mediaId, nil
 }
 
+func (s *mediaService) Update(ctx context.Context, mediaId string, input *CreateMediaInput) error {
+	err := s.repository.UpdateMedia(ctx, domain.Media{
+		ID:               mediaId,
+		Name:             input.Name,
+		ContentType:      input.ContentType,
+		Size:             input.Size,
+		LastModifiedDate: time.Now(),
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return s.storage.Upload(mediaId, input.Data)
+}
+
 func (s *mediaService) GetMetadata(ctx context.Context, id string) (FileMetadata, error) {
 	media, err := s.repository.GetMedia(ctx, id)
 

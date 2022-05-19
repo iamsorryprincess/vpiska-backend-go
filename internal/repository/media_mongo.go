@@ -61,14 +61,32 @@ func (r *mediaRepository) CreateMedia(ctx context.Context, media domain.Media) (
 	return media.ID, nil
 }
 
+func (r *mediaRepository) UpdateMedia(ctx context.Context, media domain.Media) error {
+	filter := bson.D{{"_id", media.ID}}
+	update := bson.D{{"$set", bson.D{
+		{"name", media.Name},
+		{"content_type", media.ContentType},
+		{"size", media.Size},
+		{"last_modified_date", media.LastModifiedDate},
+	}}}
+	result, err := r.db.UpdateOne(ctx, filter, update)
+
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return domain.ErrMediaNotFound
+	}
+
+	return nil
+}
+
 func (r *mediaRepository) DeleteMedia(ctx context.Context, id string) error {
 	find := bson.D{{"_id", id}}
 	result, err := r.db.DeleteOne(ctx, find)
 
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return domain.ErrMediaNotFound
-		}
 		return err
 	}
 

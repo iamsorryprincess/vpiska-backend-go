@@ -19,49 +19,26 @@ func newMongoUsers(db *mongo.Database, collectionName string) Users {
 	}
 }
 
-type groupingResult struct {
-	Name  string `bson:"_id"`
-	Phone string `bson:"phone"`
+func (r *userRepository) GetNamesCount(ctx context.Context, name string) (int64, error) {
+	filter := bson.D{{"name", name}}
+	count, err := r.db.CountDocuments(ctx, filter)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
-func (r *userRepository) CheckNameAndPhone(ctx context.Context, name string, phone string) error {
-	or := bson.D{{"$or", bson.A{
-		bson.D{{"name", name}},
-		bson.D{{"phone", phone}},
-	}}}
-	match := bson.D{{"$match", or}}
-	group := bson.D{{"$group", bson.D{{"_id", "$name"}, {"phone", bson.D{{"$last", "$phone"}}}}}}
-	pipeline := bson.A{match, group}
-	cursor, aggregateErr := r.db.Aggregate(ctx, pipeline)
+func (r *userRepository) GetPhonesCount(ctx context.Context, phone string) (int64, error) {
+	filter := bson.D{{"phone", phone}}
+	count, err := r.db.CountDocuments(ctx, filter)
 
-	if aggregateErr != nil {
-		return aggregateErr
+	if err != nil {
+		return 0, err
 	}
 
-	var result []groupingResult
-	cursorErr := cursor.All(ctx, &result)
-
-	if cursorErr != nil {
-		return cursorErr
-	}
-
-	if result == nil {
-		return nil
-	}
-
-	if len(result) == 2 {
-		return domain.ErrNameAndPhoneAlreadyUse
-	}
-
-	if result[0].Name == name && result[0].Phone == phone {
-		return domain.ErrNameAndPhoneAlreadyUse
-	}
-
-	if result[0].Phone == phone {
-		return domain.ErrPhoneAlreadyUse
-	}
-
-	return domain.ErrNameAlreadyUse
+	return count, nil
 }
 
 func (r *userRepository) CreateUser(ctx context.Context, user domain.User) (string, error) {
@@ -76,13 +53,31 @@ func (r *userRepository) CreateUser(ctx context.Context, user domain.User) (stri
 }
 
 func (r *userRepository) GetUserByID(ctx context.Context, id string) (domain.User, error) {
-	find := bson.D{{"_id", id}}
-	return getUserByFilter(ctx, r.db, find)
+	filter := bson.D{{"_id", id}}
+	model := domain.User{}
+
+	if err := r.db.FindOne(ctx, filter).Decode(&model); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return model, domain.ErrUserNotFound
+		}
+		return model, err
+	}
+
+	return model, nil
 }
 
 func (r *userRepository) GetUserByPhone(ctx context.Context, phone string) (domain.User, error) {
-	find := bson.D{{"phone", phone}}
-	return getUserByFilter(ctx, r.db, find)
+	filter := bson.D{{"phone", phone}}
+	model := domain.User{}
+
+	if err := r.db.FindOne(ctx, filter).Decode(&model); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return model, domain.ErrUserNotFound
+		}
+		return model, err
+	}
+
+	return model, nil
 }
 
 func (r *userRepository) ChangePassword(ctx context.Context, id string, password string) error {
@@ -101,15 +96,69 @@ func (r *userRepository) ChangePassword(ctx context.Context, id string, password
 	return nil
 }
 
-func getUserByFilter(ctx context.Context, db *mongo.Collection, filter bson.D) (domain.User, error) {
-	model := domain.User{}
+func (r *userRepository) SetImageId(ctx context.Context, userId string, imageId string) error {
+	filter := bson.D{{"_id", userId}}
+	update := bson.D{{"$set", bson.D{{"image_id", imageId}}}}
+	result, err := r.db.UpdateOne(ctx, filter, update)
 
-	if err := db.FindOne(ctx, filter).Decode(&model); err != nil {
-		if err == mongo.ErrNoDocuments {
-			return model, domain.ErrUserNotFound
-		}
-		return model, err
+	if err != nil {
+		return err
 	}
 
-	return model, nil
+	if result.MatchedCount == 0 {
+		return domain.ErrUserNotFound
+	}
+
+	return nil
+}
+
+func (r *userRepository) UpdateName(ctx context.Context, userId string, name string) error {
+	filter := bson.D{{"_id", userId}}
+	update := bson.D{{"$set", bson.D{{"name", name}}}}
+	result, err := r.db.UpdateOne(ctx, filter, update)
+
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return domain.ErrUserNotFound
+	}
+
+	return nil
+}
+
+func (r *userRepository) UpdatePhone(ctx context.Context, userId string, phone string) error {
+	filter := bson.D{{"_id", userId}}
+	update := bson.D{{"$set", bson.D{{"phone", phone}}}}
+	result, err := r.db.UpdateOne(ctx, filter, update)
+
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return domain.ErrUserNotFound
+	}
+
+	return nil
+}
+
+func (r *userRepository) UpdateNameAndPhone(ctx context.Context, userId string, name string, phone string) error {
+	filter := bson.D{{"_id", userId}}
+	update := bson.D{{"$set", bson.D{
+		{"name", name},
+		{"phone", phone},
+	}}}
+	result, err := r.db.UpdateOne(ctx, filter, update)
+
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return domain.ErrUserNotFound
+	}
+
+	return nil
 }

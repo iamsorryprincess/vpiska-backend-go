@@ -3,6 +3,8 @@ package v1
 import (
 	"errors"
 	"log"
+	"mime/multipart"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
@@ -40,4 +42,37 @@ func (h *Handler) InitAPI(router *gin.RouterGroup) {
 	v1Router := router.Group("/v1")
 	h.initUsersAPI(v1Router)
 	h.initMediaAPI(v1Router)
+}
+
+func parseFormFile(name string, context *gin.Context, logger *log.Logger) ([]byte, *multipart.FileHeader, error) {
+	header, err := context.FormFile(name)
+
+	if err != nil {
+		if err.Error() == emptyFormFileError {
+			response := createDomainErrorResponse(errEmptyMedia)
+			context.JSON(http.StatusOK, response)
+			return nil, nil, err
+		}
+
+		writeErrorResponse(err, logger, context)
+		return nil, nil, err
+	}
+
+	file, err := header.Open()
+
+	if err != nil {
+		writeErrorResponse(err, logger, context)
+		return nil, nil, err
+	}
+
+	defer file.Close()
+	fileData := make([]byte, header.Size)
+	_, err = file.Read(fileData)
+
+	if err != nil {
+		writeErrorResponse(err, logger, context)
+		return nil, nil, err
+	}
+
+	return fileData, header, nil
 }

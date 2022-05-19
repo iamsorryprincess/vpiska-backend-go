@@ -28,32 +28,9 @@ func (h *Handler) initMediaAPI(router *gin.RouterGroup) {
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/media [post]
 func (h *Handler) uploadMedia(context *gin.Context) {
-	header, err := context.FormFile("file")
+	fileData, header, err := parseFormFile("file", context, h.errorLogger)
 
 	if err != nil {
-		if err.Error() == emptyFormFileError {
-			response := createDomainErrorResponse(errEmptyMedia)
-			context.JSON(http.StatusOK, response)
-			return
-		}
-
-		writeErrorResponse(err, h.errorLogger, context)
-		return
-	}
-
-	file, err := header.Open()
-
-	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
-		return
-	}
-
-	defer file.Close()
-	fileData := make([]byte, header.Size)
-	_, err = file.Read(fileData)
-
-	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
 		return
 	}
 

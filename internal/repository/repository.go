@@ -10,17 +10,23 @@ import (
 )
 
 type Users interface {
-	CheckNameAndPhone(ctx context.Context, name string, phone string) error
+	GetNamesCount(ctx context.Context, name string) (int64, error)
+	GetPhonesCount(ctx context.Context, phone string) (int64, error)
 	CreateUser(ctx context.Context, user domain.User) (string, error)
 	GetUserByID(ctx context.Context, id string) (domain.User, error)
 	GetUserByPhone(ctx context.Context, phone string) (domain.User, error)
 	ChangePassword(ctx context.Context, id string, password string) error
+	SetImageId(ctx context.Context, userId string, imageId string) error
+	UpdateName(ctx context.Context, userId string, name string) error
+	UpdatePhone(ctx context.Context, userId string, phone string) error
+	UpdateNameAndPhone(ctx context.Context, userId string, name string, phone string) error
 }
 
 type Media interface {
 	GetAll(ctx context.Context) ([]domain.Media, error)
 	GetMedia(ctx context.Context, id string) (domain.Media, error)
 	CreateMedia(ctx context.Context, media domain.Media) (string, error)
+	UpdateMedia(ctx context.Context, media domain.Media) error
 	DeleteMedia(ctx context.Context, id string) error
 }
 

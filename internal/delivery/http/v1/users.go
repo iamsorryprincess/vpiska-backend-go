@@ -27,6 +27,7 @@ func (h *Handler) initUsersAPI(router *gin.RouterGroup) {
 	users.POST("/login", h.loginUser)
 	authenticated := users.Group("/", h.jwtAuth)
 	authenticated.POST("/password/change", h.changePassword)
+	authenticated.POST("/update", h.updateUser)
 }
 
 type loginResponse struct {
@@ -185,6 +186,56 @@ func (h *Handler) changePassword(context *gin.Context) {
 	writeResponse(toLoginResponse(result), context)
 }
 
+type updateUserRequest struct {
+	Name  string `json:"name"`
+	Phone string `json:"phone"`
+}
+
+// UpdateUser godoc
+// @Summary      Обновить информацию о пользователе
+// @Security     UserAuth
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Content-Type application/json
+// @param        request body updateUserRequest false "body"
+// @Success      200 {object} apiResponse{result=string}
+// @Router       /v1/users/update [post]
+func (h *Handler) updateUser(context *gin.Context) {
+	request := updateUserRequest{}
+	err := context.BindJSON(&request)
+
+	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
+		return
+	}
+
+	validationErrs, err := validateUpdateUserRequest(request)
+
+	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
+		return
+	}
+
+	if validationErrs != nil {
+		writeValidationErrResponse(validationErrs, context)
+		return
+	}
+
+	err = h.services.Users.Update(context.Request.Context(), service.UpdateUserInput{
+		ID:    context.GetString("UserID"),
+		Name:  request.Name,
+		Phone: request.Phone,
+	})
+
+	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
+		return
+	}
+
+	writeResponse(nil, context)
+}
+
 func toLoginResponse(response service.LoginResponse) loginResponse {
 	return loginResponse{
 		ID:          response.ID,
@@ -254,6 +305,20 @@ func validateChangePasswordRequest(request changePasswordRequest) ([]string, err
 
 	if request.Password != request.ConfirmPassword {
 		validationErrors = append(validationErrors, invalidConfirmPasswordError)
+	}
+
+	return validationErrors, nil
+}
+
+func validateUpdateUserRequest(request updateUserRequest) ([]string, error) {
+	var validationErrors []string
+
+	if request.Phone != "" {
+		if matched, err := regexp.MatchString(phoneRegexp, request.Phone); err != nil {
+			return nil, err
+		} else if !matched {
+			validationErrors = append(validationErrors, invalidPhoneFormatError)
+		}
 	}
 
 	return validationErrors, nil

@@ -131,6 +131,47 @@ const docTemplate = `{
                         "description": ""
                     }
                 }
+            },
+            "delete": {
+                "consumes": [
+                    "*/*"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "media"
+                ],
+                "summary": "Удалить файл",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
             }
         },
         "/v1/users/create": {

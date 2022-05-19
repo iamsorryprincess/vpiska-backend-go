@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"log"
 	"os"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/hash"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/storage"
 )
 
 // @title           Swagger UI
@@ -51,7 +53,27 @@ func Run() {
 	jwtTokenManager := auth.NewJwtManager(configuration.JWT.Key, configuration.JWT.Issuer, configuration.JWT.Audience, jwtDuration)
 	passwordManager := hash.NewPasswordHashManager()
 
-	services, err := service.NewServices(repositories, passwordManager, jwtTokenManager)
+	mediasMetadata, err := repositories.Media.GetAll(context.Background())
+
+	if err != nil {
+		errorLogger.Println(err)
+		return
+	}
+
+	mediaIds := make([]string, len(mediasMetadata))
+
+	for index, mediaMetadata := range mediasMetadata {
+		mediaIds[index] = mediaMetadata.ID
+	}
+
+	fileStorage, err := storage.NewLocalFileStorage("media", mediaIds)
+
+	if err != nil {
+		errorLogger.Println(err)
+		return
+	}
+
+	services, err := service.NewServices(repositories, passwordManager, jwtTokenManager, fileStorage)
 
 	if err != nil {
 		errorLogger.Println(err)

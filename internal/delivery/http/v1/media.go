@@ -14,6 +14,7 @@ func (h *Handler) initMediaAPI(router *gin.RouterGroup) {
 	media := router.Group("/media")
 	media.POST("", h.uploadMedia)
 	media.GET("/:id", h.getMedia)
+	media.DELETE("/:id", h.deleteMedia)
 	media.GET("/metadata/:id", h.getMetadata)
 }
 
@@ -48,11 +49,19 @@ func (h *Handler) uploadMedia(context *gin.Context) {
 	}
 
 	defer file.Close()
+	fileData := make([]byte, header.Size)
+	_, err = file.Read(fileData)
+
+	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
+		return
+	}
+
 	mediaId, err := h.services.Media.Create(context.Request.Context(), &service.CreateMediaInput{
 		Name:        header.Filename,
 		ContentType: header.Header.Get("Content-Type"),
 		Size:        header.Size,
-		File:        file,
+		Data:        fileData,
 	})
 
 	if err != nil {
@@ -107,20 +116,10 @@ func (h *Handler) getMedia(context *gin.Context) {
 		return
 	}
 
-	defer mediaData.File.Close()
-	bytes := make([]byte, mediaData.Size)
-	_, err = mediaData.File.Read(bytes)
-
-	if err != nil {
-		h.errorLogger.Println(err)
-		context.Writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
 	context.Writer.Header().Set("Content-Type", mediaData.ContentType)
 	context.Writer.Header().Set("Content-Length", fmt.Sprintf("%d", mediaData.Size))
 	context.Writer.WriteHeader(http.StatusOK)
-	_, err = context.Writer.Write(bytes)
+	_, err = context.Writer.Write(mediaData.Data)
 
 	if err != nil {
 		h.errorLogger.Println(err)
@@ -136,7 +135,7 @@ type fileMetadataResponse struct {
 	ContentType string `json:"contentType"`
 }
 
-// ChangePassword godoc
+// GetMetadata godoc
 // @Summary      Получить метаинформацию о файле
 // @Tags         media
 // @Accept       */*
@@ -180,4 +179,44 @@ func (h *Handler) getMetadata(context *gin.Context) {
 		Size:        metadata.Size,
 		ContentType: metadata.ContentType,
 	}, context)
+}
+
+// DeleteMedia godoc
+// @Summary      Удалить файл
+// @Tags         media
+// @Accept       */*
+// @Produce      json
+// @Content-Type application/json
+// @param        id   path      string  true  "media ID"
+// @Success      200 {object} apiResponse{result=string}
+// @Router       /v1/media/{id} [delete]
+func (h *Handler) deleteMedia(context *gin.Context) {
+	mediaId := context.Param("id")
+
+	if mediaId == "" {
+		writeErrorResponse(errEmptyId, h.errorLogger, context)
+		return
+	}
+
+	isMatched, err := regexp.MatchString(idRegexp, mediaId)
+
+	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
+		return
+	}
+
+	if !isMatched {
+		response := createDomainErrorResponse(errInvalidId)
+		context.JSON(http.StatusOK, response)
+		return
+	}
+
+	err = h.services.Media.Delete(context.Request.Context(), mediaId)
+
+	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
+		return
+	}
+
+	writeResponse(nil, context)
 }

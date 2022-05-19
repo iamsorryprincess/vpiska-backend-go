@@ -96,6 +96,30 @@ paths:
       tags:
       - media
   /v1/media/{id}:
+    delete:
+      consumes:
+      - '*/*'
+      parameters:
+      - description: media ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.apiResponse'
+            - properties:
+                result:
+                  type: string
+              type: object
+      summary: Удалить файл
+      tags:
+      - media
     get:
       consumes:
       - '*/*'

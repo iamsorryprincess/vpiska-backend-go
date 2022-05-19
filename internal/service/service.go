@@ -2,13 +2,12 @@ package service
 
 import (
 	"context"
-	"io"
-	"os"
 	"time"
 
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository"
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/hash"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/storage"
 )
 
 type LoginResponse struct {
@@ -45,7 +44,7 @@ type CreateMediaInput struct {
 	Name        string
 	ContentType string
 	Size        int64
-	File        io.Reader
+	Data        []byte
 }
 
 type FileMetadata struct {
@@ -59,13 +58,14 @@ type FileMetadata struct {
 type FileData struct {
 	ContentType string
 	Size        int64
-	File        *os.File
+	Data        []byte
 }
 
 type Media interface {
 	Create(ctx context.Context, input *CreateMediaInput) (string, error)
 	GetMetadata(ctx context.Context, id string) (FileMetadata, error)
 	GetFile(ctx context.Context, id string) (*FileData, error)
+	Delete(ctx context.Context, id string) error
 }
 
 type Services struct {
@@ -76,16 +76,11 @@ type Services struct {
 func NewServices(
 	repositories *repository.Repositories,
 	hashManager hash.PasswordHashManager,
-	auth auth.TokenManager) (*Services, error) {
-
-	media, err := newMediaService(repositories.Media)
-
-	if err != nil {
-		return nil, err
-	}
+	auth auth.TokenManager,
+	storage storage.FileStorage) (*Services, error) {
 
 	return &Services{
 		Users: newUserService(repositories.Users, hashManager, auth),
-		Media: media,
+		Media: newMediaService(repositories.Media, storage),
 	}, nil
 }

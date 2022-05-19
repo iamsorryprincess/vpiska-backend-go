@@ -19,7 +19,24 @@ func newMongoMedia(db *mongo.Database, collectionName string) Media {
 	}
 }
 
-func (r mediaRepository) GetMedia(ctx context.Context, id string) (domain.Media, error) {
+func (r *mediaRepository) GetAll(ctx context.Context) ([]domain.Media, error) {
+	result, err := r.db.Find(ctx, bson.D{{}})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var media []domain.Media
+	err = result.All(ctx, &media)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return media, nil
+}
+
+func (r *mediaRepository) GetMedia(ctx context.Context, id string) (domain.Media, error) {
 	filter := bson.D{{"_id", id}}
 	media := domain.Media{}
 
@@ -46,13 +63,17 @@ func (r *mediaRepository) CreateMedia(ctx context.Context, media domain.Media) (
 
 func (r *mediaRepository) DeleteMedia(ctx context.Context, id string) error {
 	find := bson.D{{"_id", id}}
-	_, err := r.db.DeleteOne(ctx, find)
+	result, err := r.db.DeleteOne(ctx, find)
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return domain.ErrMediaNotFound
 		}
 		return err
+	}
+
+	if result.DeletedCount == 0 {
+		return domain.ErrMediaNotFound
 	}
 
 	return nil

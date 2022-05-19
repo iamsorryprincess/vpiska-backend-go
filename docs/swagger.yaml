@@ -223,6 +223,33 @@ paths:
       summary: Войти в систему
       tags:
       - users
+  /v1/users/media/set:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: file
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.apiResponse'
+            - properties:
+                result:
+                  type: string
+              type: object
+      security:
+      - UserAuth: []
+      summary: Установить пользователю картинку
+      tags:
+      - users
   /v1/users/password/change:
     post:
       consumes:

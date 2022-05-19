@@ -28,6 +28,7 @@ func (h *Handler) initUsersAPI(router *gin.RouterGroup) {
 	authenticated := users.Group("/", h.jwtAuth)
 	authenticated.POST("/password/change", h.changePassword)
 	authenticated.POST("/update", h.updateUser)
+	authenticated.POST("/media/set", h.setUserImage)
 }
 
 type loginResponse struct {
@@ -234,6 +235,39 @@ func (h *Handler) updateUser(context *gin.Context) {
 	}
 
 	writeResponse(nil, context)
+}
+
+// SetUserImage godoc
+// @Summary      Установить пользователю картинку
+// @Security     UserAuth
+// @Tags         users
+// @Accept       multipart/form-data
+// @Produce      json
+// @Content-Type application/json
+// @param        image formData file true "file"
+// @Success      200 {object} apiResponse{result=string}
+// @Router       /v1/users/media/set [post]
+func (h *Handler) setUserImage(context *gin.Context) {
+	fileData, header, err := parseFormFile("image", context, h.errorLogger)
+
+	if err != nil {
+		return
+	}
+
+	imageId, err := h.services.Users.SetUserImage(context.Request.Context(), &service.SetUserImageInput{
+		UserID:      context.GetString("UserID"),
+		FileName:    header.Filename,
+		ContentType: header.Header.Get("Content-Type"),
+		Size:        header.Size,
+		FileData:    fileData,
+	})
+
+	if err != nil {
+		writeErrorResponse(err, h.errorLogger, context)
+		return
+	}
+
+	writeResponse(imageId, context)
 }
 
 func toLoginResponse(response service.LoginResponse) loginResponse {

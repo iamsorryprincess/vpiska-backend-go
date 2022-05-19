@@ -13,16 +13,19 @@ type userService struct {
 	repository  repository.Users
 	hashManager hash.PasswordHashManager
 	auth        auth.TokenManager
+	fileStorage Media
 }
 
 func newUserService(
 	repository repository.Users,
 	hashManager hash.PasswordHashManager,
-	auth auth.TokenManager) Users {
+	auth auth.TokenManager,
+	fileStorage Media) Users {
 	return &userService{
 		repository:  repository,
 		hashManager: hashManager,
 		auth:        auth,
+		fileStorage: fileStorage,
 	}
 }
 
@@ -192,7 +195,45 @@ func (s *userService) ChangePassword(ctx context.Context, input ChangePasswordIn
 }
 
 func (s *userService) SetUserImage(ctx context.Context, input *SetUserImageInput) (string, error) {
-	return "", nil
+	user, err := s.repository.GetUserByID(ctx, input.UserID)
+
+	if err != nil {
+		return "", err
+	}
+
+	if user.ImageID == "" {
+		imageId, err := s.fileStorage.Create(ctx, &CreateMediaInput{
+			Name:        input.FileName,
+			ContentType: input.ContentType,
+			Size:        input.Size,
+			Data:        input.FileData,
+		})
+
+		if err != nil {
+			return "", err
+		}
+
+		err = s.repository.SetImageId(ctx, input.UserID, imageId)
+
+		if err != nil {
+			return "", err
+		}
+
+		return imageId, nil
+	}
+
+	err = s.fileStorage.Update(ctx, user.ImageID, &CreateMediaInput{
+		Name:        input.FileName,
+		ContentType: input.ContentType,
+		Size:        input.Size,
+		Data:        input.FileData,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return user.ImageID, nil
 }
 
 func (s *userService) generateToken(id string, name string, imageId string) (string, error) {

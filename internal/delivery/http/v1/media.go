@@ -28,7 +28,7 @@ func (h *Handler) initMediaAPI(router *gin.RouterGroup) {
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/media [post]
 func (h *Handler) uploadMedia(context *gin.Context) {
-	fileData, header, err := parseFormFile("file", context, h.errorLogger)
+	fileData, header, err := parseFormFile("file", context, h.logger)
 
 	if err != nil {
 		return
@@ -42,7 +42,7 @@ func (h *Handler) uploadMedia(context *gin.Context) {
 	})
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
@@ -70,7 +70,7 @@ func (h *Handler) getMedia(context *gin.Context) {
 	isMatched, err := regexp.MatchString(idRegexp, mediaId)
 
 	if err != nil {
-		h.errorLogger.Println(err)
+		h.logger.LogError(err)
 		context.Writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -88,7 +88,7 @@ func (h *Handler) getMedia(context *gin.Context) {
 			return
 		}
 
-		h.errorLogger.Println(err)
+		h.logger.LogError(err)
 		context.Writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -99,7 +99,7 @@ func (h *Handler) getMedia(context *gin.Context) {
 	_, err = context.Writer.Write(mediaData.Data)
 
 	if err != nil {
-		h.errorLogger.Println(err)
+		h.logger.LogError(err)
 		context.Writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -133,7 +133,7 @@ func (h *Handler) getMetadata(context *gin.Context) {
 	isMatched, err := regexp.MatchString(idRegexp, mediaId)
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
@@ -146,7 +146,7 @@ func (h *Handler) getMetadata(context *gin.Context) {
 	metadata, err := h.services.Media.GetMetadata(context.Request.Context(), mediaId)
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
@@ -171,14 +171,14 @@ func (h *Handler) deleteMedia(context *gin.Context) {
 	mediaId := context.Param("id")
 
 	if mediaId == "" {
-		writeErrorResponse(errEmptyId, h.errorLogger, context)
+		writeErrorResponse(errEmptyId, h.logger, context)
 		return
 	}
 
 	isMatched, err := regexp.MatchString(idRegexp, mediaId)
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
@@ -191,7 +191,7 @@ func (h *Handler) deleteMedia(context *gin.Context) {
 	err = h.services.Media.Delete(context.Request.Context(), mediaId)
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 

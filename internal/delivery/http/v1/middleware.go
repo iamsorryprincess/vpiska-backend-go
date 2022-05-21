@@ -34,7 +34,7 @@ func (h *Handler) jwtAuth(context *gin.Context) {
 			return
 		}
 
-		h.errorLogger.Println(err)
+		h.logger.LogError(err)
 		context.AbortWithStatusJSON(http.StatusOK, createDomainErrorResponse(errInternal))
 		return
 	}
@@ -42,7 +42,7 @@ func (h *Handler) jwtAuth(context *gin.Context) {
 	validationErrs, err := validateId(token.ID)
 
 	if err != nil {
-		h.errorLogger.Println(err)
+		h.logger.LogError(err)
 		context.AbortWithStatusJSON(http.StatusOK, createDomainErrorResponse(errInternal))
 		return
 	}

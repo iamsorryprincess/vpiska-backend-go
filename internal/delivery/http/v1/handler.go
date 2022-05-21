@@ -2,13 +2,13 @@ package v1
 
 import (
 	"errors"
-	"log"
 	"mime/multipart"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/logger"
 )
 
 const (
@@ -25,26 +25,33 @@ var (
 )
 
 type Handler struct {
-	errorLogger  *log.Logger
+	logger       logger.Logger
 	services     *service.Services
 	tokenManager auth.TokenManager
 }
 
-func NewHandler(errorLogger *log.Logger, services *service.Services, tokenManager auth.TokenManager) *Handler {
+func NewHandler(logger logger.Logger, services *service.Services, tokenManager auth.TokenManager) *Handler {
 	return &Handler{
-		errorLogger:  errorLogger,
+		logger:       logger,
 		services:     services,
 		tokenManager: tokenManager,
 	}
 }
 
 func (h *Handler) InitAPI(router *gin.RouterGroup) {
+	router.Use(gin.CustomRecovery(func(context *gin.Context, recovered interface{}) {
+		if err, ok := recovered.(string); ok {
+			h.logger.LogErrorString(err)
+		}
+		context.AbortWithStatusJSON(http.StatusOK, createDomainErrorResponse(errInternal))
+	}))
+
 	v1Router := router.Group("/v1")
 	h.initUsersAPI(v1Router)
 	h.initMediaAPI(v1Router)
 }
 
-func parseFormFile(name string, context *gin.Context, logger *log.Logger) ([]byte, *multipart.FileHeader, error) {
+func parseFormFile(name string, context *gin.Context, logger logger.Logger) ([]byte, *multipart.FileHeader, error) {
 	header, err := context.FormFile(name)
 
 	if err != nil {

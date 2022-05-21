@@ -2,11 +2,11 @@ package v1
 
 import (
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/logger"
 )
 
 var errInternal = errors.New("InternalError")
@@ -55,11 +55,11 @@ func createSuccessResponse(response interface{}) apiResponse {
 	}
 }
 
-func writeErrorResponse(err error, logger *log.Logger, context *gin.Context) {
+func writeErrorResponse(err error, logger logger.Logger, context *gin.Context) {
 	var response apiResponse
 
 	if domain.IsInternalError(err) {
-		logger.Println(err)
+		logger.LogError(err)
 		response = createDomainErrorResponse(errInternal)
 	} else {
 		response = createDomainErrorResponse(err)

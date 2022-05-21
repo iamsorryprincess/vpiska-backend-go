@@ -60,14 +60,14 @@ func (h *Handler) createUser(context *gin.Context) {
 	err := context.BindJSON(&request)
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
 	validationErrs, err := validateCreateRequest(request)
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
@@ -83,7 +83,7 @@ func (h *Handler) createUser(context *gin.Context) {
 	})
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
@@ -109,14 +109,14 @@ func (h *Handler) loginUser(context *gin.Context) {
 	err := context.BindJSON(&request)
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
 	validationErrs, err := validateLoginRequest(request)
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
@@ -131,7 +131,7 @@ func (h *Handler) loginUser(context *gin.Context) {
 	})
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
@@ -158,14 +158,14 @@ func (h *Handler) changePassword(context *gin.Context) {
 	err := context.BindJSON(&request)
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
 	validationErrs, err := validateChangePasswordRequest(request)
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
@@ -180,7 +180,7 @@ func (h *Handler) changePassword(context *gin.Context) {
 	})
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
@@ -207,14 +207,14 @@ func (h *Handler) updateUser(context *gin.Context) {
 	err := context.BindJSON(&request)
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
 	validationErrs, err := validateUpdateUserRequest(request)
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
@@ -230,7 +230,7 @@ func (h *Handler) updateUser(context *gin.Context) {
 	})
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
@@ -248,7 +248,7 @@ func (h *Handler) updateUser(context *gin.Context) {
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/users/media/set [post]
 func (h *Handler) setUserImage(context *gin.Context) {
-	fileData, header, err := parseFormFile("image", context, h.errorLogger)
+	fileData, header, err := parseFormFile("image", context, h.logger)
 
 	if err != nil {
 		return
@@ -263,7 +263,7 @@ func (h *Handler) setUserImage(context *gin.Context) {
 	})
 
 	if err != nil {
-		writeErrorResponse(err, h.errorLogger, context)
+		writeErrorResponse(err, h.logger, context)
 		return
 	}
 

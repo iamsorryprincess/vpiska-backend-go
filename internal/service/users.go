@@ -54,11 +54,17 @@ func (s *userService) Create(ctx context.Context, input CreateUserInput) (LoginR
 		return LoginResponse{}, domain.ErrPhoneAlreadyUse
 	}
 
+	hashedPassword, err := s.hashManager.HashPassword(input.Password)
+
+	if err != nil {
+		return LoginResponse{}, err
+	}
+
 	model := domain.User{
 		Name:      input.Name,
 		PhoneCode: "+7",
 		Phone:     input.Phone,
-		Password:  s.hashManager.HashPassword(input.Password),
+		Password:  hashedPassword,
 	}
 
 	userId, err := s.repository.CreateUser(ctx, model)
@@ -89,7 +95,13 @@ func (s *userService) Login(ctx context.Context, input LoginUserInput) (LoginRes
 		return LoginResponse{}, err
 	}
 
-	if !s.hashManager.VerifyHashedPassword(model.Password, input.Password) {
+	isPasswordMatched, err := s.hashManager.VerifyPassword(input.Password, model.Password)
+
+	if err != nil {
+		return LoginResponse{}, err
+	}
+
+	if !isPasswordMatched {
 		return LoginResponse{}, domain.ErrInvalidPassword
 	}
 
@@ -175,7 +187,13 @@ func (s *userService) ChangePassword(ctx context.Context, input ChangePasswordIn
 		return LoginResponse{}, err
 	}
 
-	if err = s.repository.ChangePassword(ctx, input.ID, s.hashManager.HashPassword(input.Password)); err != nil {
+	hashedPassword, err := s.hashManager.HashPassword(model.Password)
+
+	if err != nil {
+		return LoginResponse{}, err
+	}
+
+	if err = s.repository.ChangePassword(ctx, input.ID, hashedPassword); err != nil {
 		return LoginResponse{}, err
 	}
 

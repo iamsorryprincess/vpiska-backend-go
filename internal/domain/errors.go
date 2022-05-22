@@ -10,6 +10,8 @@ var (
 	ErrInvalidPassword        = errors.New("InvalidPassword")
 
 	ErrMediaNotFound = errors.New("MediaNotFound")
+
+	ErrEventNotFound = errors.New("EventNotFound")
 )
 
 func IsInternalError(err error) bool {
@@ -20,7 +22,8 @@ func IsInternalError(err error) bool {
 		ErrNameAndPhoneAlreadyUse,
 		ErrUserNotFound,
 		ErrInvalidPassword,
-		ErrMediaNotFound:
+		ErrMediaNotFound,
+		ErrEventNotFound:
 		return false
 	default:
 		return true

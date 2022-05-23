@@ -20,6 +20,9 @@ type Configuration struct {
 		Audience     string `yaml:"audience"`
 		LifetimeDays int    `yaml:"lifetimeDays"`
 	} `yaml:"jwt"`
+	Hash struct {
+		Key string `yaml:"key"`
+	} `yaml:"hash"`
 }
 
 func parseConfig() (*Configuration, error) {

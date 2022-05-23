@@ -1,9 +1,9 @@
 package hash
 
 import (
-	"errors"
-
-	"golang.org/x/crypto/bcrypt"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 )
 
 type PasswordHashManager interface {
@@ -12,31 +12,47 @@ type PasswordHashManager interface {
 }
 
 type passwordHashManager struct {
+	key []byte
 }
 
-func NewPasswordHashManager() PasswordHashManager {
-	return &passwordHashManager{}
+func NewPasswordHashManager(key string) (PasswordHashManager, error) {
+	bytes, err := hex.DecodeString(key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &passwordHashManager{
+		key: bytes,
+	}, nil
 }
 
 func (m *passwordHashManager) HashPassword(password string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+	h := hmac.New(sha256.New, m.key)
+	_, err := h.Write([]byte(password))
 
 	if err != nil {
 		return "", err
 	}
 
-	return string(hash), err
+	result := h.Sum(nil)
+	return hex.EncodeToString(result), nil
 }
 
 func (m *passwordHashManager) VerifyPassword(password string, hashedPassword string) (bool, error) {
-	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	hashedPasswordBytes, err := hex.DecodeString(hashedPassword)
 
 	if err != nil {
-		if errors.Is(bcrypt.ErrMismatchedHashAndPassword, err) {
-			return false, nil
-		}
 		return false, err
 	}
 
-	return true, nil
+	h := hmac.New(sha256.New, m.key)
+	_, err = h.Write([]byte(password))
+
+	if err != nil {
+		return false, err
+	}
+
+	result := h.Sum(nil)
+	return hmac.Equal(result, hashedPasswordBytes), nil
 }

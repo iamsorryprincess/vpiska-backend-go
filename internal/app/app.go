@@ -55,7 +55,12 @@ func Run() {
 
 	jwtDuration := time.Hour * 24 * 3
 	jwtTokenManager := auth.NewJwtManager(configuration.JWT.Key, configuration.JWT.Issuer, configuration.JWT.Audience, jwtDuration)
-	passwordManager := hash.NewPasswordHashManager()
+	passwordManager, err := hash.NewPasswordHashManager(configuration.Hash.Key)
+
+	if err != nil {
+		appLogger.LogError(err)
+		return
+	}
 
 	mediasMetadata, err := repositories.Media.GetAll(context.Background())
 

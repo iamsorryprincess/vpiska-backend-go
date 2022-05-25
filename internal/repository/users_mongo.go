@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
@@ -57,7 +58,7 @@ func (r *userRepository) GetUserByID(ctx context.Context, id string) (domain.Use
 	model := domain.User{}
 
 	if err := r.db.FindOne(ctx, filter).Decode(&model); err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return model, domain.ErrUserNotFound
 		}
 		return model, err
@@ -71,7 +72,7 @@ func (r *userRepository) GetUserByPhone(ctx context.Context, phone string) (doma
 	model := domain.User{}
 
 	if err := r.db.FindOne(ctx, filter).Decode(&model); err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return model, domain.ErrUserNotFound
 		}
 		return model, err

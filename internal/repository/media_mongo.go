@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
@@ -41,7 +42,7 @@ func (r *mediaRepository) GetMedia(ctx context.Context, id string) (domain.Media
 	media := domain.Media{}
 
 	if err := r.db.FindOne(ctx, filter).Decode(&media); err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return media, domain.ErrMediaNotFound
 		}
 		return media, err

@@ -30,14 +30,25 @@ type Media interface {
 	DeleteMedia(ctx context.Context, id string) error
 }
 
+type EventRangeData struct {
+	ID          string             `bson:"_id"`
+	Name        string             `bson:"name"`
+	UsersCount  int                `bson:"users_count"`
+	Coordinates domain.Coordinates `bson:"coordinates"`
+}
+
 type Events interface {
 	CreateEvent(ctx context.Context, event domain.Event) (string, error)
 	GetEventById(ctx context.Context, id string) (domain.Event, error)
 	GetEventByOwnerId(ctx context.Context, ownerId string) (domain.Event, error)
+	GetEventsByRange(ctx context.Context, xLeft float64, xRight float64, yLeft float64, yRight float64) ([]EventRangeData, error)
 	UpdateEvent(ctx context.Context, id string, address string, coordinates domain.Coordinates) error
 	RemoveEvent(ctx context.Context, id string) error
 	AddMedia(ctx context.Context, id string, mediaInfo domain.MediaInfo) error
 	RemoveMedia(ctx context.Context, eventId string, mediaId string) error
+	AddUserInfo(ctx context.Context, eventId string, userInfo domain.UserInfo) error
+	RemoveUserInfo(ctx context.Context, eventId string, userId string) error
+	AddChatMessage(ctx context.Context, id string, chatMessage domain.ChatMessage) error
 }
 
 type Repositories struct {
@@ -69,6 +80,6 @@ func NewRepositories(connectionString string, dbName string) (*Repositories, err
 	return &Repositories{
 		Users:  newMongoUsers(db, "users"),
 		Media:  newMongoMedia(db, "media"),
-		Events: newEventsMongo(db, "events"),
+		Events: newMongoEvents(db, "events"),
 	}, nil
 }

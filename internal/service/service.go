@@ -4,9 +4,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository"
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/hash"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/logger"
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/storage"
 )
 
@@ -44,6 +46,7 @@ type LoginResponse struct {
 	Name        string
 	Phone       string
 	ImageID     string
+	EventID     string
 	AccessToken string
 }
 
@@ -85,12 +88,26 @@ type Users interface {
 	SetUserImage(ctx context.Context, input *SetUserImageInput) (string, error)
 }
 
+type CreateEventInput struct {
+	OwnerID     string
+	Name        string
+	Address     string
+	Coordinates domain.Coordinates
+}
+
+type Events interface {
+	Create(ctx context.Context, input CreateEventInput) (domain.Event, error)
+	GetByID(ctx context.Context, id string) (domain.Event, error)
+}
+
 type Services struct {
-	Users Users
-	Media Media
+	Users  Users
+	Media  Media
+	Events Events
 }
 
 func NewServices(
+	logger logger.Logger,
 	repositories *repository.Repositories,
 	hashManager hash.PasswordHashManager,
 	auth auth.TokenManager,
@@ -98,7 +115,8 @@ func NewServices(
 	media := newMediaService(repositories.Media, storage)
 
 	return &Services{
-		Users: newUserService(repositories.Users, hashManager, auth, media),
-		Media: media,
+		Users:  newUserService(repositories.Users, repositories.Events, hashManager, auth, media),
+		Media:  media,
+		Events: NewEventService(logger, repositories.Events),
 	}, nil
 }

@@ -32,11 +32,12 @@ func (h *Handler) initUsersAPI(router *gin.RouterGroup) {
 }
 
 type loginResponse struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Phone       string `json:"phone"`
-	ImageID     string `json:"imageId"`
-	AccessToken string `json:"accessToken"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Phone       string  `json:"phone"`
+	ImageID     *string `json:"imageId"`
+	EventID     *string `json:"eventId"`
+	AccessToken string  `json:"accessToken"`
 }
 
 type createUserRequest struct {
@@ -64,14 +65,14 @@ func (h *Handler) createUser(context *gin.Context) {
 		return
 	}
 
-	validationErrs, err := validateCreateRequest(request)
+	validationErrs, err := validateCreateUserRequest(request)
 
 	if err != nil {
 		writeErrorResponse(err, h.logger, context)
 		return
 	}
 
-	if validationErrs != nil {
+	if len(validationErrs) > 0 {
 		writeValidationErrResponse(validationErrs, context)
 		return
 	}
@@ -120,7 +121,7 @@ func (h *Handler) loginUser(context *gin.Context) {
 		return
 	}
 
-	if validationErrs != nil {
+	if len(validationErrs) > 0 {
 		writeValidationErrResponse(validationErrs, context)
 		return
 	}
@@ -169,7 +170,7 @@ func (h *Handler) changePassword(context *gin.Context) {
 		return
 	}
 
-	if validationErrs != nil {
+	if len(validationErrs) > 0 {
 		writeValidationErrResponse(validationErrs, context)
 		return
 	}
@@ -218,7 +219,7 @@ func (h *Handler) updateUser(context *gin.Context) {
 		return
 	}
 
-	if validationErrs != nil {
+	if len(validationErrs) > 0 {
 		writeValidationErrResponse(validationErrs, context)
 		return
 	}
@@ -271,16 +272,27 @@ func (h *Handler) setUserImage(context *gin.Context) {
 }
 
 func toLoginResponse(response service.LoginResponse) loginResponse {
+	var imageId *string
+	if response.ImageID != "" {
+		imageId = &response.ImageID
+	}
+
+	var eventId *string
+	if response.EventID != "" {
+		eventId = &response.EventID
+	}
+
 	return loginResponse{
 		ID:          response.ID,
 		Name:        response.Name,
 		Phone:       response.Phone,
-		ImageID:     response.ImageID,
+		ImageID:     imageId,
+		EventID:     eventId,
 		AccessToken: response.AccessToken,
 	}
 }
 
-func validateCreateRequest(request createUserRequest) ([]string, error) {
+func validateCreateUserRequest(request createUserRequest) ([]string, error) {
 	var validationErrors []string
 
 	if request.Name == "" {

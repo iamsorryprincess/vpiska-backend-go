@@ -14,7 +14,7 @@ type eventsRepository struct {
 	db *mongo.Collection
 }
 
-func newEventsMongo(db *mongo.Database, collectionName string) Events {
+func newMongoEvents(db *mongo.Database, collectionName string) Events {
 	return &eventsRepository{
 		db: db.Collection(collectionName),
 	}
@@ -59,6 +59,10 @@ func (r *eventsRepository) GetEventByOwnerId(ctx context.Context, ownerId string
 	}
 
 	return event, nil
+}
+
+func (r *eventsRepository) GetEventsByRange(ctx context.Context, xLeft float64, xRight float64, yLeft float64, yRight float64) ([]EventRangeData, error) {
+	return nil, nil
 }
 
 func (r *eventsRepository) UpdateEvent(ctx context.Context, id string, address string, coordinates domain.Coordinates) error {
@@ -114,6 +118,69 @@ func (r *eventsRepository) AddMedia(ctx context.Context, id string, mediaInfo do
 func (r *eventsRepository) RemoveMedia(ctx context.Context, eventId string, mediaId string) error {
 	filter := bson.D{{"_id", eventId}}
 	update := bson.D{{"$pull", bson.D{{"media", bson.D{{"_id", mediaId}}}}}}
+	result, err := r.db.UpdateOne(ctx, filter, update)
+
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return domain.ErrEventNotFound
+	}
+
+	return nil
+}
+
+func (r *eventsRepository) AddUserInfo(ctx context.Context, eventId string, userInfo domain.UserInfo) error {
+	filter := bson.D{{"$and", bson.A{
+		bson.D{{"_id", eventId}},
+		bson.D{{"users", bson.D{{"$elemMatch", bson.D{{"_id", userInfo.ID}}}}}},
+	}}}
+
+	count, err := r.db.CountDocuments(ctx, filter)
+
+	if err != nil {
+		return err
+	}
+
+	if count > 0 {
+		return domain.ErrUserAlreadyExist
+	}
+
+	filter = bson.D{{"_id", eventId}}
+	update := bson.D{{"$push", bson.D{{"users", userInfo}}}}
+	result, err := r.db.UpdateOne(ctx, filter, update)
+
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return domain.ErrEventNotFound
+	}
+
+	return nil
+}
+
+func (r *eventsRepository) RemoveUserInfo(ctx context.Context, eventId string, userId string) error {
+	filter := bson.D{{"_id", eventId}}
+	update := bson.D{{"$pull", bson.D{{"users", bson.D{{"_id", userId}}}}}}
+	result, err := r.db.UpdateOne(ctx, filter, update)
+
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return domain.ErrEventNotFound
+	}
+
+	return err
+}
+
+func (r *eventsRepository) AddChatMessage(ctx context.Context, id string, chatMessage domain.ChatMessage) error {
+	filter := bson.D{{"_id", id}}
+	update := bson.D{{"$push", bson.D{{"chat_messages", chatMessage}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 
 	if err != nil {

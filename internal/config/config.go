@@ -1,4 +1,4 @@
-package app
+package config
 
 import (
 	"os"
@@ -25,7 +25,7 @@ type Configuration struct {
 	} `yaml:"hash"`
 }
 
-func parseConfig() (*Configuration, error) {
+func Parse() (*Configuration, error) {
 	f, openFileErr := os.Open("configs/main.yml")
 
 	if openFileErr != nil {

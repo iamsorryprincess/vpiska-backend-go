@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 type Coordinates struct {
 	X float64 `bson:"x"`
 	Y float64 `bson:"y"`
@@ -27,6 +29,7 @@ type Event struct {
 	Name         string        `bson:"name"`
 	Address      string        `bson:"address"`
 	Coordinates  Coordinates   `bson:"coordinates"`
+	CreatedAt    time.Time     `bson:"created_at"`
 	Users        []UserInfo    `bson:"users"`
 	Media        []MediaInfo   `bson:"media"`
 	ChatMessages []ChatMessage `bson:"chat_messages"`

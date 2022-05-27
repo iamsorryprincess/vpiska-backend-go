@@ -11,7 +11,9 @@ var (
 
 	ErrMediaNotFound = errors.New("MediaNotFound")
 
-	ErrEventNotFound = errors.New("EventNotFound")
+	ErrEventNotFound        = errors.New("EventNotFound")
+	ErrOwnerAlreadyHasEvent = errors.New("OwnerAlreadyHasEvent")
+	ErrUserAlreadyExist     = errors.New("UserAlreadyExist")
 )
 
 func IsInternalError(err error) bool {
@@ -23,7 +25,9 @@ func IsInternalError(err error) bool {
 		ErrUserNotFound,
 		ErrInvalidPassword,
 		ErrMediaNotFound,
-		ErrEventNotFound:
+		ErrEventNotFound,
+		ErrOwnerAlreadyHasEvent,
+		ErrUserAlreadyExist:
 		return false
 	default:
 		return true

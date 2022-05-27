@@ -16,6 +16,101 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/v1/events/create": {
+            "post": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Создать эвент",
+                "parameters": [
+                    {
+                        "description": "body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.createEventRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/v1.eventResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/events/get": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Получить эвент по идентификатору",
+                "parameters": [
+                    {
+                        "description": "body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.eventIDRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/v1.eventResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/v1/media": {
             "post": {
                 "consumes": [
@@ -439,6 +534,48 @@ const docTemplate = `{
                 }
             }
         },
+        "v1.chatMessage": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                },
+                "userImageId": {
+                    "type": "string"
+                },
+                "userName": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.coordinates": {
+            "type": "object",
+            "properties": {
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                }
+            }
+        },
+        "v1.createEventRequest": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "coordinates": {
+                    "$ref": "#/definitions/v1.coordinates"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.createUserRequest": {
             "type": "object",
             "properties": {
@@ -461,6 +598,49 @@ const docTemplate = `{
             "properties": {
                 "errorCode": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.eventIDRequest": {
+            "type": "object",
+            "properties": {
+                "eventId": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.eventResponse": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "chatMessages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.chatMessage"
+                    }
+                },
+                "coordinates": {
+                    "$ref": "#/definitions/v1.coordinates"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "media": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.mediaInfo"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "ownerId": {
+                    "type": "string"
+                },
+                "usersCount": {
+                    "type": "integer"
                 }
             }
         },
@@ -487,6 +667,9 @@ const docTemplate = `{
                 "accessToken": {
                     "type": "string"
                 },
+                "eventId": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -508,6 +691,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.mediaInfo": {
+            "type": "object",
+            "properties": {
+                "contentType": {
+                    "type": "string"
+                },
+                "id": {
                     "type": "string"
                 }
             }

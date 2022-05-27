@@ -17,6 +17,33 @@ definitions:
       password:
         type: string
     type: object
+  v1.chatMessage:
+    properties:
+      message:
+        type: string
+      userId:
+        type: string
+      userImageId:
+        type: string
+      userName:
+        type: string
+    type: object
+  v1.coordinates:
+    properties:
+      x:
+        type: number
+      "y":
+        type: number
+    type: object
+  v1.createEventRequest:
+    properties:
+      address:
+        type: string
+      coordinates:
+        $ref: '#/definitions/v1.coordinates'
+      name:
+        type: string
+    type: object
   v1.createUserRequest:
     properties:
       confirmPassword:
@@ -33,6 +60,34 @@ definitions:
       errorCode:
         type: string
     type: object
+  v1.eventIDRequest:
+    properties:
+      eventId:
+        type: string
+    type: object
+  v1.eventResponse:
+    properties:
+      address:
+        type: string
+      chatMessages:
+        items:
+          $ref: '#/definitions/v1.chatMessage'
+        type: array
+      coordinates:
+        $ref: '#/definitions/v1.coordinates'
+      id:
+        type: string
+      media:
+        items:
+          $ref: '#/definitions/v1.mediaInfo'
+        type: array
+      name:
+        type: string
+      ownerId:
+        type: string
+      usersCount:
+        type: integer
+    type: object
   v1.fileMetadataResponse:
     properties:
       contentType:
@@ -47,6 +102,8 @@ definitions:
   v1.loginResponse:
     properties:
       accessToken:
+        type: string
+      eventId:
         type: string
       id:
         type: string
@@ -64,6 +121,13 @@ definitions:
       phone:
         type: string
     type: object
+  v1.mediaInfo:
+    properties:
+      contentType:
+        type: string
+      id:
+        type: string
+    type: object
   v1.updateUserRequest:
     properties:
       name:
@@ -77,6 +141,60 @@ info:
   title: Swagger UI
   version: "1.0"
 paths:
+  /v1/events/create:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.createEventRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.apiResponse'
+            - properties:
+                result:
+                  $ref: '#/definitions/v1.eventResponse'
+              type: object
+      security:
+      - UserAuth: []
+      summary: Создать эвент
+      tags:
+      - events
+  /v1/events/get:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.eventIDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.apiResponse'
+            - properties:
+                result:
+                  $ref: '#/definitions/v1.eventResponse'
+              type: object
+      summary: Получить эвент по идентификатору
+      tags:
+      - events
   /v1/media:
     post:
       consumes:

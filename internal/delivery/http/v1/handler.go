@@ -4,6 +4,7 @@ import (
 	"errors"
 	"mime/multipart"
 	"net/http"
+	"regexp"
 
 	"github.com/gin-gonic/gin"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
@@ -49,6 +50,7 @@ func (h *Handler) InitAPI(router *gin.RouterGroup) {
 	v1Router := router.Group("/v1")
 	h.initUsersAPI(v1Router)
 	h.initMediaAPI(v1Router)
+	h.initEventsAPI(v1Router)
 }
 
 func parseFormFile(name string, context *gin.Context, logger logger.Logger) ([]byte, *multipart.FileHeader, error) {
@@ -82,4 +84,18 @@ func parseFormFile(name string, context *gin.Context, logger logger.Logger) ([]b
 	}
 
 	return fileData, header, nil
+}
+
+func validateId(id string) ([]string, error) {
+	var validationErrors []string
+
+	if id == "" {
+		validationErrors = append(validationErrors, emptyIDError)
+	} else if matched, err := regexp.MatchString(idRegexp, id); err != nil {
+		return nil, err
+	} else if !matched {
+		validationErrors = append(validationErrors, invalidIdFormatError)
+	}
+
+	return validationErrors, nil
 }

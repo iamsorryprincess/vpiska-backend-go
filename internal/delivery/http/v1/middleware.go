@@ -2,7 +2,6 @@ package v1
 
 import (
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -55,18 +54,4 @@ func (h *Handler) jwtAuth(context *gin.Context) {
 	context.Set("UserID", token.ID)
 	context.Set("Username", token.Name)
 	context.Set("UserImage", token.ImageID)
-}
-
-func validateId(id string) ([]string, error) {
-	var validationErrors []string
-
-	if id == "" {
-		validationErrors = append(validationErrors, emptyIDError)
-	} else if matched, err := regexp.MatchString(idRegexp, id); err != nil {
-		return nil, err
-	} else if !matched {
-		validationErrors = append(validationErrors, invalidIdFormatError)
-	}
-
-	return validationErrors, nil
 }

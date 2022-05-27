@@ -11,6 +11,7 @@ import (
 	"time"
 
 	_ "github.com/iamsorryprincess/vpiska-backend-go/docs"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/config"
 	appHttp "github.com/iamsorryprincess/vpiska-backend-go/internal/delivery/http"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/server"
@@ -39,7 +40,7 @@ func Run() {
 		return
 	}
 
-	configuration, err := parseConfig()
+	configuration, err := config.Parse()
 
 	if err != nil {
 		appLogger.LogError(err)
@@ -82,7 +83,7 @@ func Run() {
 		return
 	}
 
-	services, err := service.NewServices(repositories, passwordManager, jwtTokenManager, fileStorage)
+	services, err := service.NewServices(appLogger, repositories, passwordManager, jwtTokenManager, fileStorage)
 
 	if err != nil {
 		appLogger.LogError(err)
@@ -101,13 +102,14 @@ func Run() {
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("Shutting down server...")
+	appLogger.LogInfo("Shutting down server...")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	if err = httpServer.Stop(ctx); err != nil {
-		log.Fatal("Server forced to shutdown:", err)
+		appLogger.LogError(err)
+		return
 	}
 
-	log.Println("Server exiting")
+	appLogger.LogInfo("Server exiting")
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository"
@@ -10,22 +11,25 @@ import (
 )
 
 type userService struct {
-	repository  repository.Users
-	hashManager hash.PasswordHashManager
-	auth        auth.TokenManager
-	fileStorage Media
+	repository      repository.Users
+	eventRepository repository.Events
+	hashManager     hash.PasswordHashManager
+	auth            auth.TokenManager
+	fileStorage     Media
 }
 
 func newUserService(
 	repository repository.Users,
+	eventRepository repository.Events,
 	hashManager hash.PasswordHashManager,
 	auth auth.TokenManager,
 	fileStorage Media) Users {
 	return &userService{
-		repository:  repository,
-		hashManager: hashManager,
-		auth:        auth,
-		fileStorage: fileStorage,
+		repository:      repository,
+		eventRepository: eventRepository,
+		hashManager:     hashManager,
+		auth:            auth,
+		fileStorage:     fileStorage,
 	}
 }
 
@@ -111,11 +115,18 @@ func (s *userService) Login(ctx context.Context, input LoginUserInput) (LoginRes
 		return LoginResponse{}, err
 	}
 
+	event, err := s.eventRepository.GetEventByOwnerId(ctx, model.ID)
+
+	if err != nil && !errors.Is(err, domain.ErrEventNotFound) {
+		return LoginResponse{}, err
+	}
+
 	return LoginResponse{
 		ID:          model.ID,
 		Name:        model.Name,
 		Phone:       model.Phone,
 		ImageID:     model.ImageID,
+		EventID:     event.ID,
 		AccessToken: token,
 	}, nil
 }
@@ -203,11 +214,18 @@ func (s *userService) ChangePassword(ctx context.Context, input ChangePasswordIn
 		return LoginResponse{}, err
 	}
 
+	event, err := s.eventRepository.GetEventByOwnerId(ctx, model.ID)
+
+	if err != nil && !errors.Is(err, domain.ErrEventNotFound) {
+		return LoginResponse{}, err
+	}
+
 	return LoginResponse{
 		ID:          model.ID,
 		Name:        model.Name,
 		Phone:       model.Phone,
 		ImageID:     model.ImageID,
+		EventID:     event.ID,
 		AccessToken: token,
 	}, nil
 }

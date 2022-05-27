@@ -111,6 +111,51 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/events/range": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Получить эвенты по области",
+                "parameters": [
+                    {
+                        "description": "body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.getByRangeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/v1.apiResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/v1.eventRangeData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/v1/media": {
             "post": {
                 "consumes": [
@@ -609,6 +654,23 @@ const docTemplate = `{
                 }
             }
         },
+        "v1.eventRangeData": {
+            "type": "object",
+            "properties": {
+                "coordinates": {
+                    "$ref": "#/definitions/v1.coordinates"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "usersCount": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.eventResponse": {
             "type": "object",
             "properties": {
@@ -658,6 +720,20 @@ const docTemplate = `{
                 },
                 "size": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.getByRangeRequest": {
+            "type": "object",
+            "properties": {
+                "coordinates": {
+                    "$ref": "#/definitions/v1.coordinates"
+                },
+                "horizontalRange": {
+                    "type": "number"
+                },
+                "verticalRange": {
+                    "type": "number"
                 }
             }
         },

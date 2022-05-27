@@ -65,6 +65,17 @@ definitions:
       eventId:
         type: string
     type: object
+  v1.eventRangeData:
+    properties:
+      coordinates:
+        $ref: '#/definitions/v1.coordinates'
+      id:
+        type: string
+      name:
+        type: string
+      usersCount:
+        type: integer
+    type: object
   v1.eventResponse:
     properties:
       address:
@@ -98,6 +109,15 @@ definitions:
         type: string
       size:
         type: integer
+    type: object
+  v1.getByRangeRequest:
+    properties:
+      coordinates:
+        $ref: '#/definitions/v1.coordinates'
+      horizontalRange:
+        type: number
+      verticalRange:
+        type: number
     type: object
   v1.loginResponse:
     properties:
@@ -193,6 +213,32 @@ paths:
                   $ref: '#/definitions/v1.eventResponse'
               type: object
       summary: Получить эвент по идентификатору
+      tags:
+      - events
+  /v1/events/range:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.getByRangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.apiResponse'
+            - properties:
+                result:
+                  $ref: '#/definitions/v1.eventRangeData'
+              type: object
+      summary: Получить эвенты по области
       tags:
       - events
   /v1/media:

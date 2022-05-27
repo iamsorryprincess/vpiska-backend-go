@@ -57,3 +57,19 @@ func (s *eventService) Create(ctx context.Context, input CreateEventInput) (doma
 func (s *eventService) GetByID(ctx context.Context, id string) (domain.Event, error) {
 	return s.repository.GetEventById(ctx, id)
 }
+
+func (s *eventService) GetByRange(ctx context.Context, input GetByRangeInput) ([]domain.EventRangeData, error) {
+	halfHorizontalRange := input.HorizontalRange / 2
+	halfVerticalRange := input.VerticalRange / 2
+	xLeft := input.Coordinates.X - halfHorizontalRange
+	xRight := input.Coordinates.X + halfHorizontalRange
+	yLeft := input.Coordinates.Y - halfVerticalRange
+	yRight := input.Coordinates.Y + halfVerticalRange
+	result, err := s.repository.GetEventsByRange(ctx, xLeft, xRight, yLeft, yRight)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
+}

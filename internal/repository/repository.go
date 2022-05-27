@@ -30,18 +30,11 @@ type Media interface {
 	DeleteMedia(ctx context.Context, id string) error
 }
 
-type EventRangeData struct {
-	ID          string             `bson:"_id"`
-	Name        string             `bson:"name"`
-	UsersCount  int                `bson:"users_count"`
-	Coordinates domain.Coordinates `bson:"coordinates"`
-}
-
 type Events interface {
 	CreateEvent(ctx context.Context, event domain.Event) (string, error)
 	GetEventById(ctx context.Context, id string) (domain.Event, error)
 	GetEventByOwnerId(ctx context.Context, ownerId string) (domain.Event, error)
-	GetEventsByRange(ctx context.Context, xLeft float64, xRight float64, yLeft float64, yRight float64) ([]EventRangeData, error)
+	GetEventsByRange(ctx context.Context, xLeft float64, xRight float64, yLeft float64, yRight float64) ([]domain.EventRangeData, error)
 	UpdateEvent(ctx context.Context, id string, address string, coordinates domain.Coordinates) error
 	RemoveEvent(ctx context.Context, id string) error
 	AddMedia(ctx context.Context, id string, mediaInfo domain.MediaInfo) error

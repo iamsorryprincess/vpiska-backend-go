@@ -95,9 +95,16 @@ type CreateEventInput struct {
 	Coordinates domain.Coordinates
 }
 
+type GetByRangeInput struct {
+	HorizontalRange float64
+	VerticalRange   float64
+	Coordinates     domain.Coordinates
+}
+
 type Events interface {
 	Create(ctx context.Context, input CreateEventInput) (domain.Event, error)
 	GetByID(ctx context.Context, id string) (domain.Event, error)
+	GetByRange(ctx context.Context, input GetByRangeInput) ([]domain.EventRangeData, error)
 }
 
 type Services struct {

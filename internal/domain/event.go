@@ -3,8 +3,8 @@ package domain
 import "time"
 
 type Coordinates struct {
-	X float64 `bson:"x"`
-	Y float64 `bson:"y"`
+	X float64 `bson:"x" json:"x"`
+	Y float64 `bson:"y" json:"y"`
 }
 
 type UserInfo struct {
@@ -33,4 +33,11 @@ type Event struct {
 	Users        []UserInfo    `bson:"users"`
 	Media        []MediaInfo   `bson:"media"`
 	ChatMessages []ChatMessage `bson:"chat_messages"`
+}
+
+type EventRangeData struct {
+	ID          string      `bson:"_id" json:"id"`
+	Name        string      `bson:"name" json:"name"`
+	UsersCount  int         `bson:"users_count" json:"usersCount"`
+	Coordinates Coordinates `bson:"coordinates" json:"coordinates"`
 }

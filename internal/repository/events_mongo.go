@@ -8,6 +8,7 @@ import (
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type eventsRepository struct {
@@ -61,8 +62,33 @@ func (r *eventsRepository) GetEventByOwnerId(ctx context.Context, ownerId string
 	return event, nil
 }
 
-func (r *eventsRepository) GetEventsByRange(ctx context.Context, xLeft float64, xRight float64, yLeft float64, yRight float64) ([]EventRangeData, error) {
-	return nil, nil
+func (r *eventsRepository) GetEventsByRange(ctx context.Context, xLeft float64, xRight float64, yLeft float64, yRight float64) ([]domain.EventRangeData, error) {
+	filter := bson.D{{"$and", bson.A{
+		bson.D{{"coordinates.x", bson.D{{"$gte", xLeft}}}},
+		bson.D{{"coordinates.y", bson.D{{"$gte", yLeft}}}},
+		bson.D{{"coordinates.x", bson.D{{"$lte", xRight}}}},
+		bson.D{{"coordinates.y", bson.D{{"$lte", yRight}}}},
+	}}}
+
+	cursor, err := r.db.Find(ctx, filter, options.Find().SetProjection(bson.D{
+		{"_id", 1},
+		{"name", 1},
+		{"coordinates", 1},
+		{"users_count", bson.D{{"$size", "$users"}}},
+	}))
+
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]domain.EventRangeData, 0)
+	err = cursor.All(ctx, &result)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 func (r *eventsRepository) UpdateEvent(ctx context.Context, id string, address string, coordinates domain.Coordinates) error {

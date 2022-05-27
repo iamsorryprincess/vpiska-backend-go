@@ -7,13 +7,16 @@ import (
 )
 
 const (
-	emptyAddressError     = "AddressIsEmpty"
-	emptyCoordinatesError = "CoordinatesIsEmpty"
+	emptyAddressError         = "AddressIsEmpty"
+	emptyCoordinatesError     = "CoordinatesIsEmpty"
+	emptyHorizontalRangeError = "HorizontalRangeIsEmpty"
+	emptyVerticalRangeError   = "VerticalRangeIsEmpty"
 )
 
 func (h *Handler) initEventsAPI(router *gin.RouterGroup) {
 	events := router.Group("/events")
 	events.POST("/get", h.getEventByID)
+	events.POST("/range", h.getEventsByRange)
 	authenticated := events.Group("/", h.jwtAuth)
 	authenticated.POST("/create", h.createEvent)
 }
@@ -140,6 +143,61 @@ func (h *Handler) getEventByID(context *gin.Context) {
 	writeResponse(toEventResponse(event), context)
 }
 
+type getByRangeRequest struct {
+	HorizontalRange *float64     `json:"horizontalRange"`
+	VerticalRange   *float64     `json:"verticalRange"`
+	Coordinates     *coordinates `json:"coordinates"`
+}
+
+type eventRangeData struct {
+	ID          string      `json:"id"`
+	Name        string      `json:"name"`
+	UsersCount  int         `json:"usersCount"`
+	Coordinates coordinates `json:"coordinates"`
+}
+
+// GetEventsByRange godoc
+// @Summary      Получить эвенты по области
+// @Tags         events
+// @Accept       json
+// @Produce      json
+// @Content-Type application/json
+// @param        request body getByRangeRequest true "body"
+// @Success      200 {object} apiResponse{result=eventRangeData}
+// @Router       /v1/events/range [post]
+func (h *Handler) getEventsByRange(context *gin.Context) {
+	request := getByRangeRequest{}
+	err := context.BindJSON(&request)
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	validationErrs := validateGetByRangeRequest(request)
+
+	if len(validationErrs) > 0 {
+		writeValidationErrResponse(validationErrs, context)
+		return
+	}
+
+	result, err := h.services.Events.GetByRange(context.Request.Context(), service.GetByRangeInput{
+		HorizontalRange: *request.HorizontalRange,
+		VerticalRange:   *request.VerticalRange,
+		Coordinates: domain.Coordinates{
+			X: *request.Coordinates.X,
+			Y: *request.Coordinates.Y,
+		},
+	})
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	writeResponse(result, context)
+}
+
 func validateCreateEventRequest(request createEventRequest) []string {
 	var validationErrors []string
 
@@ -152,6 +210,28 @@ func validateCreateEventRequest(request createEventRequest) []string {
 	}
 
 	if request.Coordinates == nil {
+		validationErrors = append(validationErrors, emptyCoordinatesError)
+	} else if request.Coordinates.X == nil || request.Coordinates.Y == nil {
+		validationErrors = append(validationErrors, emptyCoordinatesError)
+	}
+
+	return validationErrors
+}
+
+func validateGetByRangeRequest(request getByRangeRequest) []string {
+	var validationErrors []string
+
+	if request.HorizontalRange == nil {
+		validationErrors = append(validationErrors, emptyHorizontalRangeError)
+	}
+
+	if request.VerticalRange == nil {
+		validationErrors = append(validationErrors, emptyVerticalRangeError)
+	}
+
+	if request.Coordinates == nil {
+		validationErrors = append(validationErrors, emptyCoordinatesError)
+	} else if request.Coordinates.X == nil || request.Coordinates.Y == nil {
 		validationErrors = append(validationErrors, emptyCoordinatesError)
 	}
 

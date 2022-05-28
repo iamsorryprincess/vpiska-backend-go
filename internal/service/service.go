@@ -41,15 +41,6 @@ type Media interface {
 	Delete(ctx context.Context, id string) error
 }
 
-type LoginResponse struct {
-	ID          string
-	Name        string
-	Phone       string
-	ImageID     string
-	EventID     string
-	AccessToken string
-}
-
 type CreateUserInput struct {
 	Name     string
 	Phone    string
@@ -81,11 +72,11 @@ type SetUserImageInput struct {
 }
 
 type Users interface {
-	Create(ctx context.Context, input CreateUserInput) (LoginResponse, error)
-	Login(ctx context.Context, input LoginUserInput) (LoginResponse, error)
-	Update(ctx context.Context, input UpdateUserInput) error
-	ChangePassword(ctx context.Context, input ChangePasswordInput) (LoginResponse, error)
-	SetUserImage(ctx context.Context, input *SetUserImageInput) (string, error)
+	Create(ctx context.Context, input CreateUserInput) (domain.UserLogin, error)
+	Login(ctx context.Context, input LoginUserInput) (domain.UserLogin, error)
+	Update(ctx context.Context, input UpdateUserInput) (domain.UserLogin, error)
+	ChangePassword(ctx context.Context, input ChangePasswordInput) (domain.UserLogin, error)
+	SetUserImage(ctx context.Context, input *SetUserImageInput) (domain.UserLogin, error)
 }
 
 type CreateEventInput struct {

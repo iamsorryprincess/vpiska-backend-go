@@ -434,7 +434,7 @@
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "type": "string"
+                                            "$ref": "#/definitions/v1.loginResponse"
                                         }
                                     }
                                 }
@@ -533,7 +533,7 @@
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "type": "string"
+                                            "$ref": "#/definitions/v1.loginResponse"
                                         }
                                     }
                                 }

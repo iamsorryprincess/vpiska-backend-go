@@ -36,8 +36,8 @@ type Event struct {
 }
 
 type EventRangeData struct {
-	ID          string      `bson:"_id" json:"id"`
-	Name        string      `bson:"name" json:"name"`
+	ID          string      `bson:"_id"         json:"id"`
+	Name        string      `bson:"name"        json:"name"`
 	UsersCount  int         `bson:"users_count" json:"usersCount"`
 	Coordinates Coordinates `bson:"coordinates" json:"coordinates"`
 }

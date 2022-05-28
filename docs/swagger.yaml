@@ -407,7 +407,7 @@ paths:
             - $ref: '#/definitions/v1.apiResponse'
             - properties:
                 result:
-                  type: string
+                  $ref: '#/definitions/v1.loginResponse'
               type: object
       security:
       - UserAuth: []
@@ -462,7 +462,7 @@ paths:
             - $ref: '#/definitions/v1.apiResponse'
             - properties:
                 result:
-                  type: string
+                  $ref: '#/definitions/v1.loginResponse'
               type: object
       security:
       - UserAuth: []

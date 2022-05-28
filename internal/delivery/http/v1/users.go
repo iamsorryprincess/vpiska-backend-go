@@ -88,7 +88,7 @@ func (h *Handler) createUser(context *gin.Context) {
 		return
 	}
 
-	writeResponse(toLoginResponse(result), context)
+	writeResponse(result, context)
 }
 
 type loginUserRequest struct {
@@ -136,7 +136,7 @@ func (h *Handler) loginUser(context *gin.Context) {
 		return
 	}
 
-	writeResponse(toLoginResponse(result), context)
+	writeResponse(result, context)
 }
 
 type changePasswordRequest struct {
@@ -185,7 +185,7 @@ func (h *Handler) changePassword(context *gin.Context) {
 		return
 	}
 
-	writeResponse(toLoginResponse(result), context)
+	writeResponse(result, context)
 }
 
 type updateUserRequest struct {
@@ -201,7 +201,7 @@ type updateUserRequest struct {
 // @Produce      json
 // @Content-Type application/json
 // @param        request body updateUserRequest false "body"
-// @Success      200 {object} apiResponse{result=string}
+// @Success      200 {object} apiResponse{result=loginResponse}
 // @Router       /v1/users/update [post]
 func (h *Handler) updateUser(context *gin.Context) {
 	request := updateUserRequest{}
@@ -224,7 +224,7 @@ func (h *Handler) updateUser(context *gin.Context) {
 		return
 	}
 
-	err = h.services.Users.Update(context.Request.Context(), service.UpdateUserInput{
+	result, err := h.services.Users.Update(context.Request.Context(), service.UpdateUserInput{
 		ID:    context.GetString("UserID"),
 		Name:  request.Name,
 		Phone: request.Phone,
@@ -235,7 +235,7 @@ func (h *Handler) updateUser(context *gin.Context) {
 		return
 	}
 
-	writeResponse(nil, context)
+	writeResponse(result, context)
 }
 
 // SetUserImage godoc
@@ -246,7 +246,7 @@ func (h *Handler) updateUser(context *gin.Context) {
 // @Produce      json
 // @Content-Type application/json
 // @param        image formData file true "file"
-// @Success      200 {object} apiResponse{result=string}
+// @Success      200 {object} apiResponse{result=loginResponse}
 // @Router       /v1/users/media/set [post]
 func (h *Handler) setUserImage(context *gin.Context) {
 	fileData, header, err := parseFormFile("image", context, h.logger)
@@ -255,7 +255,7 @@ func (h *Handler) setUserImage(context *gin.Context) {
 		return
 	}
 
-	imageId, err := h.services.Users.SetUserImage(context.Request.Context(), &service.SetUserImageInput{
+	result, err := h.services.Users.SetUserImage(context.Request.Context(), &service.SetUserImageInput{
 		UserID:      context.GetString("UserID"),
 		FileName:    header.Filename,
 		ContentType: header.Header.Get("Content-Type"),
@@ -268,28 +268,7 @@ func (h *Handler) setUserImage(context *gin.Context) {
 		return
 	}
 
-	writeResponse(imageId, context)
-}
-
-func toLoginResponse(response service.LoginResponse) loginResponse {
-	var imageId *string
-	if response.ImageID != "" {
-		imageId = &response.ImageID
-	}
-
-	var eventId *string
-	if response.EventID != "" {
-		eventId = &response.EventID
-	}
-
-	return loginResponse{
-		ID:          response.ID,
-		Name:        response.Name,
-		Phone:       response.Phone,
-		ImageID:     imageId,
-		EventID:     eventId,
-		AccessToken: response.AccessToken,
-	}
+	writeResponse(result, context)
 }
 
 func validateCreateUserRequest(request createUserRequest) ([]string, error) {

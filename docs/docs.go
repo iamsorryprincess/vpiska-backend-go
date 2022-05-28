@@ -442,7 +442,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "type": "string"
+                                            "$ref": "#/definitions/v1.loginResponse"
                                         }
                                     }
                                 }
@@ -541,7 +541,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "type": "string"
+                                            "$ref": "#/definitions/v1.loginResponse"
                                         }
                                     }
                                 }

@@ -157,23 +157,27 @@ func (r *eventsRepository) RemoveMedia(ctx context.Context, eventId string, medi
 	return nil
 }
 
-func (r *eventsRepository) AddUserInfo(ctx context.Context, eventId string, userInfo domain.UserInfo) error {
+func (r *eventsRepository) ExistUser(ctx context.Context, eventId string, userId string) (bool, error) {
 	filter := bson.D{{"$and", bson.A{
 		bson.D{{"_id", eventId}},
-		bson.D{{"users", bson.D{{"$elemMatch", bson.D{{"_id", userInfo.ID}}}}}},
+		bson.D{{"users", bson.D{{"$elemMatch", bson.D{{"_id", userId}}}}}},
 	}}}
 
-	count, err := r.db.CountDocuments(ctx, filter)
+	event := bson.D{}
+	err := r.db.FindOne(ctx, filter).Decode(&event)
 
 	if err != nil {
-		return err
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return false, nil
+		}
+		return false, err
 	}
 
-	if count > 0 {
-		return domain.ErrUserAlreadyExist
-	}
+	return true, nil
+}
 
-	filter = bson.D{{"_id", eventId}}
+func (r *eventsRepository) AddUserInfo(ctx context.Context, eventId string, userInfo domain.UserInfo) error {
+	filter := bson.D{{"_id", eventId}}
 	update := bson.D{{"$push", bson.D{{"users", userInfo}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 

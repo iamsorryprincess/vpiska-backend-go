@@ -61,23 +61,11 @@ func (s *mediaService) Update(ctx context.Context, mediaId string, input *Create
 	return s.storage.Upload(mediaId, input.Data)
 }
 
-func (s *mediaService) GetMetadata(ctx context.Context, id string) (FileMetadata, error) {
-	media, err := s.repository.GetMedia(ctx, id)
-
-	if err != nil {
-		return FileMetadata{}, err
-	}
-
-	return FileMetadata{
-		ID:               media.ID,
-		Name:             media.Name,
-		ContentType:      media.ContentType,
-		Size:             media.Size,
-		LastModifiedDate: media.LastModifiedDate,
-	}, nil
+func (s *mediaService) GetMetadata(ctx context.Context, id string) (domain.Media, error) {
+	return s.repository.GetMedia(ctx, id)
 }
 
-func (s *mediaService) GetFile(ctx context.Context, id string) (*FileData, error) {
+func (s *mediaService) GetFile(ctx context.Context, id string) (*domain.FileData, error) {
 	metadata, err := s.repository.GetMedia(ctx, id)
 
 	if err != nil {
@@ -90,13 +78,11 @@ func (s *mediaService) GetFile(ctx context.Context, id string) (*FileData, error
 		return nil, err
 	}
 
-	result := &FileData{
+	return &domain.FileData{
 		ContentType: metadata.ContentType,
 		Size:        metadata.Size,
 		Data:        fileData,
-	}
-
-	return result, nil
+	}, nil
 }
 
 func (s *mediaService) Delete(ctx context.Context, id string) error {

@@ -2,6 +2,12 @@ package domain
 
 import "time"
 
+type FileData struct {
+	ContentType string
+	Size        int64
+	Data        []byte
+}
+
 type Media struct {
 	ID               string    `bson:"_id"`
 	Name             string    `bson:"name"`

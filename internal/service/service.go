@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"time"
 
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository"
@@ -19,25 +18,11 @@ type CreateMediaInput struct {
 	Data        []byte
 }
 
-type FileMetadata struct {
-	ID               string
-	Name             string
-	ContentType      string
-	Size             int64
-	LastModifiedDate time.Time
-}
-
-type FileData struct {
-	ContentType string
-	Size        int64
-	Data        []byte
-}
-
 type Media interface {
 	Create(ctx context.Context, input *CreateMediaInput) (string, error)
 	Update(ctx context.Context, mediaId string, input *CreateMediaInput) error
-	GetMetadata(ctx context.Context, id string) (FileMetadata, error)
-	GetFile(ctx context.Context, id string) (*FileData, error)
+	GetMetadata(ctx context.Context, id string) (domain.Media, error)
+	GetFile(ctx context.Context, id string) (*domain.FileData, error)
 	Delete(ctx context.Context, id string) error
 }
 
@@ -99,8 +84,8 @@ type Events interface {
 }
 
 type Services struct {
-	Users  Users
 	Media  Media
+	Users  Users
 	Events Events
 }
 
@@ -113,8 +98,8 @@ func NewServices(
 	media := newMediaService(repositories.Media, storage)
 
 	return &Services{
-		Users:  newUserService(repositories.Users, repositories.Events, hashManager, auth, media),
 		Media:  media,
+		Users:  newUserService(repositories.Users, repositories.Events, hashManager, auth, media),
 		Events: NewEventService(logger, repositories.Events),
 	}, nil
 }

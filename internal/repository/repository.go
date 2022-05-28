@@ -46,8 +46,8 @@ type Events interface {
 }
 
 type Repositories struct {
-	Users  Users
 	Media  Media
+	Users  Users
 	Events Events
 }
 
@@ -72,8 +72,8 @@ func NewRepositories(connectionString string, dbName string) (*Repositories, err
 	db := client.Database(dbName)
 
 	return &Repositories{
-		Users:  newMongoUsers(db, "users"),
 		Media:  newMongoMedia(db, "media"),
+		Users:  newMongoUsers(db, "users"),
 		Events: newMongoEvents(db, "events"),
 	}, nil
 }

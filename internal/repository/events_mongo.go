@@ -32,16 +32,25 @@ func (r *eventsRepository) CreateEvent(ctx context.Context, event domain.Event) 
 	return event.ID, nil
 }
 
-func (r *eventsRepository) GetEventById(ctx context.Context, id string) (domain.Event, error) {
+func (r *eventsRepository) GetEventById(ctx context.Context, id string) (domain.EventInfo, error) {
 	filter := bson.D{{"_id", id}}
-	event := domain.Event{}
-	err := r.db.FindOne(ctx, filter).Decode(&event)
+	event := domain.EventInfo{}
+	err := r.db.FindOne(ctx, filter, options.FindOne().SetProjection(bson.D{
+		{"_id", 1},
+		{"owner_id", 1},
+		{"name", 1},
+		{"address", 1},
+		{"coordinates", 1},
+		{"users_count", bson.D{{"$size", "$users"}}},
+		{"media", 1},
+		{"chat_messages", 1},
+	})).Decode(&event)
 
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return domain.Event{}, domain.ErrEventNotFound
+			return domain.EventInfo{}, domain.ErrEventNotFound
 		}
-		return domain.Event{}, err
+		return domain.EventInfo{}, err
 	}
 
 	return event, nil

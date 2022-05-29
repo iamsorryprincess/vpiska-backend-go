@@ -32,7 +32,7 @@ type Users interface {
 
 type Events interface {
 	CreateEvent(ctx context.Context, event domain.Event) (string, error)
-	GetEventById(ctx context.Context, id string) (domain.Event, error)
+	GetEventById(ctx context.Context, id string) (domain.EventInfo, error)
 	GetEventByOwnerId(ctx context.Context, ownerId string) (domain.Event, error)
 	GetEventsByRange(ctx context.Context, xLeft float64, xRight float64, yLeft float64, yRight float64) ([]domain.EventRangeData, error)
 	UpdateEvent(ctx context.Context, id string, address string, coordinates domain.Coordinates) error

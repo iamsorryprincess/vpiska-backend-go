@@ -8,19 +8,19 @@ type Coordinates struct {
 }
 
 type UserInfo struct {
-	ID string `bson:"_id"`
+	ID string `bson:"_id" json:"id"`
 }
 
 type MediaInfo struct {
-	ID          string `bson:"_id"`
-	ContentType string `bson:"content_type"`
+	ID          string `bson:"_id"          json:"id"`
+	ContentType string `bson:"content_type" json:"contentType"`
 }
 
 type ChatMessage struct {
-	UserID      string `bson:"user_id"`
-	UserName    string `bson:"user_name"`
-	UserImageID string `bson:"user_image_id"`
-	Message     string `bson:"message"`
+	UserID      string `bson:"user_id"       json:"userId"`
+	UserName    string `bson:"user_name"     json:"userName"`
+	UserImageID string `bson:"user_image_id" json:"userImageId"`
+	Message     string `bson:"message"       json:"message"`
 }
 
 type Event struct {
@@ -40,4 +40,15 @@ type EventRangeData struct {
 	Name        string      `bson:"name"        json:"name"`
 	UsersCount  int         `bson:"users_count" json:"usersCount"`
 	Coordinates Coordinates `bson:"coordinates" json:"coordinates"`
+}
+
+type EventInfo struct {
+	ID           string        `bson:"_id"           json:"id"`
+	OwnerID      string        `bson:"owner_id"      json:"ownerId"`
+	Name         string        `bson:"name"          json:"name"`
+	Address      string        `bson:"address"       json:"address"`
+	Coordinates  Coordinates   `bson:"coordinates"   json:"coordinates"`
+	UsersCount   int           `bson:"users_count"   json:"usersCount"`
+	Media        []MediaInfo   `bson:"media"         json:"media"`
+	ChatMessages []ChatMessage `bson:"chat_messages" json:"chatMessages"`
 }

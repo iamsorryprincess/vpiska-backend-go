@@ -78,8 +78,8 @@ type GetByRangeInput struct {
 }
 
 type Events interface {
-	Create(ctx context.Context, input CreateEventInput) (domain.Event, error)
-	GetByID(ctx context.Context, id string) (domain.Event, error)
+	Create(ctx context.Context, input CreateEventInput) (domain.EventInfo, error)
+	GetByID(ctx context.Context, id string) (domain.EventInfo, error)
 	GetByRange(ctx context.Context, input GetByRangeInput) ([]domain.EventRangeData, error)
 }
 

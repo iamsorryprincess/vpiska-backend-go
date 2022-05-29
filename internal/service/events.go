@@ -22,15 +22,15 @@ func NewEventService(logger logger.Logger, events repository.Events) Events {
 	}
 }
 
-func (s *eventService) Create(ctx context.Context, input CreateEventInput) (domain.Event, error) {
+func (s *eventService) Create(ctx context.Context, input CreateEventInput) (domain.EventInfo, error) {
 	_, err := s.repository.GetEventByOwnerId(ctx, input.OwnerID)
 
 	if err != nil && !errors.Is(err, domain.ErrEventNotFound) {
-		return domain.Event{}, err
+		return domain.EventInfo{}, err
 	}
 
 	if err == nil {
-		return domain.Event{}, domain.ErrOwnerAlreadyHasEvent
+		return domain.EventInfo{}, domain.ErrOwnerAlreadyHasEvent
 	}
 
 	event := domain.Event{
@@ -47,14 +47,22 @@ func (s *eventService) Create(ctx context.Context, input CreateEventInput) (doma
 	id, err := s.repository.CreateEvent(ctx, event)
 
 	if err != nil {
-		return domain.Event{}, err
+		return domain.EventInfo{}, err
 	}
 
-	event.ID = id
-	return event, nil
+	return domain.EventInfo{
+		ID:           id,
+		OwnerID:      event.OwnerID,
+		Name:         event.Name,
+		Address:      event.Address,
+		Coordinates:  event.Coordinates,
+		UsersCount:   len(event.Users),
+		Media:        event.Media,
+		ChatMessages: event.ChatMessages,
+	}, nil
 }
 
-func (s *eventService) GetByID(ctx context.Context, id string) (domain.Event, error) {
+func (s *eventService) GetByID(ctx context.Context, id string) (domain.EventInfo, error) {
 	return s.repository.GetEventById(ctx, id)
 }
 

@@ -96,7 +96,7 @@ func (h *Handler) createEvent(context *gin.Context) {
 		return
 	}
 
-	writeResponse(toEventResponse(result), context)
+	writeResponse(result, context)
 }
 
 type eventIDRequest struct {
@@ -140,7 +140,7 @@ func (h *Handler) getEventByID(context *gin.Context) {
 		return
 	}
 
-	writeResponse(toEventResponse(event), context)
+	writeResponse(event, context)
 }
 
 type getByRangeRequest struct {
@@ -236,38 +236,4 @@ func validateGetByRangeRequest(request getByRangeRequest) []string {
 	}
 
 	return validationErrors
-}
-
-func toEventResponse(event domain.Event) eventResponse {
-	media := make([]mediaInfo, len(event.Media))
-	for i, item := range event.Media {
-		media[i] = mediaInfo{
-			ID:          item.ID,
-			ContentType: item.ContentType,
-		}
-	}
-
-	chatMessages := make([]chatMessage, len(event.ChatMessages))
-	for i, item := range event.ChatMessages {
-		chatMessages[i] = chatMessage{
-			UserID:      item.UserID,
-			UserName:    item.UserName,
-			UserImageID: item.UserImageID,
-			Message:     item.Message,
-		}
-	}
-
-	return eventResponse{
-		ID:      event.ID,
-		OwnerID: event.OwnerID,
-		Name:    event.Name,
-		Address: event.Address,
-		Coordinates: coordinates{
-			X: &event.Coordinates.X,
-			Y: &event.Coordinates.Y,
-		},
-		UsersCount:   len(event.Users),
-		Media:        media,
-		ChatMessages: chatMessages,
-	}
 }

@@ -32,25 +32,16 @@ func (r *eventsRepository) CreateEvent(ctx context.Context, event domain.Event) 
 	return event.ID, nil
 }
 
-func (r *eventsRepository) GetEventById(ctx context.Context, id string) (domain.EventInfo, error) {
+func (r *eventsRepository) GetEventById(ctx context.Context, id string) (domain.Event, error) {
 	filter := bson.D{{"_id", id}}
-	event := domain.EventInfo{}
-	err := r.db.FindOne(ctx, filter, options.FindOne().SetProjection(bson.D{
-		{"_id", 1},
-		{"owner_id", 1},
-		{"name", 1},
-		{"address", 1},
-		{"coordinates", 1},
-		{"users_count", bson.D{{"$size", "$users"}}},
-		{"media", 1},
-		{"chat_messages", 1},
-	})).Decode(&event)
+	event := domain.Event{}
+	err := r.db.FindOne(ctx, filter).Decode(&event)
 
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return domain.EventInfo{}, domain.ErrEventNotFound
+			return domain.Event{}, domain.ErrEventNotFound
 		}
-		return domain.EventInfo{}, err
+		return domain.Event{}, err
 	}
 
 	return event, nil
@@ -164,25 +155,6 @@ func (r *eventsRepository) RemoveMedia(ctx context.Context, eventId string, medi
 	}
 
 	return nil
-}
-
-func (r *eventsRepository) ExistUser(ctx context.Context, eventId string, userId string) (bool, error) {
-	filter := bson.D{{"$and", bson.A{
-		bson.D{{"_id", eventId}},
-		bson.D{{"users", bson.D{{"$elemMatch", bson.D{{"_id", userId}}}}}},
-	}}}
-
-	event := bson.D{}
-	err := r.db.FindOne(ctx, filter).Decode(&event)
-
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return false, nil
-		}
-		return false, err
-	}
-
-	return true, nil
 }
 
 func (r *eventsRepository) AddUserInfo(ctx context.Context, eventId string, userInfo domain.UserInfo) error {

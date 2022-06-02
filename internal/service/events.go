@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
@@ -13,12 +15,14 @@ import (
 type eventService struct {
 	logger     logger.Logger
 	repository repository.Events
+	publisher  Publisher
 }
 
-func NewEventService(logger logger.Logger, events repository.Events) Events {
+func NewEventService(logger logger.Logger, events repository.Events, publisher Publisher) Events {
 	return &eventService{
 		logger:     logger,
 		repository: events,
+		publisher:  publisher,
 	}
 }
 
@@ -63,7 +67,22 @@ func (s *eventService) Create(ctx context.Context, input CreateEventInput) (doma
 }
 
 func (s *eventService) GetByID(ctx context.Context, id string) (domain.EventInfo, error) {
-	return s.repository.GetEventById(ctx, id)
+	event, err := s.repository.GetEventById(ctx, id)
+
+	if err != nil {
+		return domain.EventInfo{}, err
+	}
+
+	return domain.EventInfo{
+		ID:           event.ID,
+		OwnerID:      event.OwnerID,
+		Name:         event.Name,
+		Address:      event.Address,
+		Coordinates:  event.Coordinates,
+		UsersCount:   len(event.Users),
+		Media:        event.Media,
+		ChatMessages: event.ChatMessages,
+	}, nil
 }
 
 func (s *eventService) GetByRange(ctx context.Context, input GetByRangeInput) ([]domain.EventRangeData, error) {
@@ -80,4 +99,75 @@ func (s *eventService) GetByRange(ctx context.Context, input GetByRangeInput) ([
 	}
 
 	return result, err
+}
+
+func (s *eventService) AddUserInfo(ctx context.Context, input AddUserInfoInput) error {
+	event, err := s.repository.GetEventById(ctx, input.EventID)
+
+	if err != nil {
+		return err
+	}
+
+	for _, userInfo := range event.Users {
+		if userInfo.ID == input.UserID {
+			return domain.ErrUserAlreadyExist
+		}
+	}
+
+	err = s.repository.AddUserInfo(ctx, input.EventID, domain.UserInfo{
+		ID: input.UserID,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	s.publisher.Publish(input.EventID, []byte(fmt.Sprintf("usersCountUpdated/%d", len(event.Users)+1)))
+	return nil
+}
+
+func (s *eventService) RemoveUserInfo(ctx context.Context, eventId string, userId string) error {
+	event, err := s.repository.GetEventById(ctx, eventId)
+
+	if err != nil {
+		return err
+	}
+
+	for _, userInfo := range event.Users {
+		if userInfo.ID == userId {
+			err = s.repository.RemoveUserInfo(ctx, eventId, userId)
+
+			if err != nil {
+				return err
+			}
+
+			s.publisher.Publish(eventId, []byte(fmt.Sprintf("usersCountUpdated/%d", len(event.Users)-1)))
+			return nil
+		}
+	}
+
+	return domain.ErrUserNotFound
+}
+
+func (s *eventService) SendChatMessage(ctx context.Context, input ChatMessageInput) error {
+	chatMessage := domain.ChatMessage{
+		UserID:      input.UserID,
+		UserName:    input.UserName,
+		UserImageID: input.UserImageID,
+		Message:     input.Message,
+	}
+	err := s.repository.AddChatMessage(ctx, input.EventID, chatMessage)
+
+	if err != nil {
+		return err
+	}
+
+	data, err := json.Marshal(chatMessage)
+
+	if err != nil {
+		return err
+	}
+
+	s.publisher.Publish(input.EventID, []byte("chatMessage/"+string(data)))
+	return nil
 }

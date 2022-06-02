@@ -32,14 +32,13 @@ type Users interface {
 
 type Events interface {
 	CreateEvent(ctx context.Context, event domain.Event) (string, error)
-	GetEventById(ctx context.Context, id string) (domain.EventInfo, error)
+	GetEventById(ctx context.Context, id string) (domain.Event, error)
 	GetEventByOwnerId(ctx context.Context, ownerId string) (domain.Event, error)
 	GetEventsByRange(ctx context.Context, xLeft float64, xRight float64, yLeft float64, yRight float64) ([]domain.EventRangeData, error)
 	UpdateEvent(ctx context.Context, id string, address string, coordinates domain.Coordinates) error
 	RemoveEvent(ctx context.Context, id string) error
 	AddMedia(ctx context.Context, id string, mediaInfo domain.MediaInfo) error
 	RemoveMedia(ctx context.Context, eventId string, mediaId string) error
-	ExistUser(ctx context.Context, eventId string, userId string) (bool, error)
 	AddUserInfo(ctx context.Context, eventId string, userInfo domain.UserInfo) error
 	RemoveUserInfo(ctx context.Context, eventId string, userId string) error
 	AddChatMessage(ctx context.Context, id string, chatMessage domain.ChatMessage) error

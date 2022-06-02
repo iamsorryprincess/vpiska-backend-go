@@ -51,6 +51,7 @@ func (h *Handler) InitAPI(router *gin.RouterGroup) {
 	h.initUsersAPI(v1Router)
 	h.initMediaAPI(v1Router)
 	h.initEventsAPI(v1Router)
+	h.initWebSockets(v1Router)
 }
 
 func parseFormFile(name string, context *gin.Context, logger logger.Logger) ([]byte, *multipart.FileHeader, error) {

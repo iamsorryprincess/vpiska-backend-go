@@ -6,6 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
+	github.com/gorilla/websocket v1.4.2
 	github.com/swaggo/http-swagger v1.2.8
 	github.com/swaggo/swag v1.8.1
 	go.mongodb.org/mongo-driver v1.9.0

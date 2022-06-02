@@ -76,17 +76,43 @@ type GetByRangeInput struct {
 	VerticalRange   float64
 	Coordinates     domain.Coordinates
 }
+type AddUserInfoInput struct {
+	EventID string
+	UserID  string
+}
+
+type ChatMessageInput struct {
+	EventID     string
+	UserID      string
+	UserName    string
+	UserImageID string
+	Message     string
+}
 
 type Events interface {
 	Create(ctx context.Context, input CreateEventInput) (domain.EventInfo, error)
 	GetByID(ctx context.Context, id string) (domain.EventInfo, error)
 	GetByRange(ctx context.Context, input GetByRangeInput) ([]domain.EventRangeData, error)
+	AddUserInfo(ctx context.Context, input AddUserInfoInput) error
+	RemoveUserInfo(ctx context.Context, eventId string, userId string) error
+	SendChatMessage(ctx context.Context, input ChatMessageInput) error
+}
+
+type Subscriber interface {
+	OnReceive(message []byte)
+}
+
+type Publisher interface {
+	Subscribe(eventId string, subscriber Subscriber)
+	Unsubscribe(eventId string, subscriber Subscriber)
+	Publish(eventId string, message []byte)
 }
 
 type Services struct {
-	Media  Media
-	Users  Users
-	Events Events
+	Media     Media
+	Users     Users
+	Events    Events
+	Publisher Publisher
 }
 
 func NewServices(
@@ -96,10 +122,12 @@ func NewServices(
 	auth auth.TokenManager,
 	storage storage.FileStorage) (*Services, error) {
 	media := newMediaService(repositories.Media, storage)
+	pub := newPublisher()
 
 	return &Services{
-		Media:  media,
-		Users:  newUserService(repositories.Users, repositories.Events, hashManager, auth, media),
-		Events: NewEventService(logger, repositories.Events),
+		Media:     media,
+		Users:     newUserService(repositories.Users, repositories.Events, hashManager, auth, media),
+		Events:    NewEventService(logger, repositories.Events, pub),
+		Publisher: pub,
 	}, nil
 }

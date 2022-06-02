@@ -91,6 +91,7 @@ type ChatMessageInput struct {
 
 type Events interface {
 	Create(ctx context.Context, input CreateEventInput) (domain.EventInfo, error)
+	Close(ctx context.Context, eventId string, userId string) error
 	GetByID(ctx context.Context, id string) (domain.EventInfo, error)
 	GetByRange(ctx context.Context, input GetByRangeInput) ([]domain.EventRangeData, error)
 	AddUserInfo(ctx context.Context, input AddUserInfoInput) error
@@ -100,12 +101,14 @@ type Events interface {
 
 type Subscriber interface {
 	OnReceive(message []byte)
+	OnClose()
 }
 
 type Publisher interface {
 	Subscribe(eventId string, subscriber Subscriber)
 	Unsubscribe(eventId string, subscriber Subscriber)
 	Publish(eventId string, message []byte)
+	Close(eventId string)
 }
 
 type Services struct {

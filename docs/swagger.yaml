@@ -161,6 +161,34 @@ info:
   title: Swagger UI
   version: "1.0"
 paths:
+  /v1/events/close:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.eventIDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.apiResponse'
+            - properties:
+                result:
+                  type: string
+              type: object
+      security:
+      - UserAuth: []
+      summary: Закрыть эвент
+      tags:
+      - events
   /v1/events/create:
     post:
       consumes:

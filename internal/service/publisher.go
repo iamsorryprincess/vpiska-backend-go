@@ -36,3 +36,19 @@ func (p *publisher) Publish(eventId string, message []byte) {
 		subscriber.OnReceive(message)
 	}
 }
+
+func (p *publisher) Close(eventId string) {
+	temp := make([]Subscriber, len(p.subscriptions[eventId]))
+
+	for i, item := range p.subscriptions[eventId] {
+		temp[i] = item
+	}
+
+	p.mutex.Lock()
+	delete(p.subscriptions, eventId)
+	p.mutex.Unlock()
+
+	for _, subscriber := range temp {
+		subscriber.OnClose()
+	}
+}

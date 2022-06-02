@@ -66,6 +66,28 @@ func (s *eventService) Create(ctx context.Context, input CreateEventInput) (doma
 	}, nil
 }
 
+func (s *eventService) Close(ctx context.Context, eventId string, userId string) error {
+	event, err := s.repository.GetEventById(ctx, eventId)
+
+	if err != nil {
+		return err
+	}
+
+	if event.OwnerID != userId {
+		return domain.ErrUserIsNotOwner
+	}
+
+	err = s.repository.RemoveEvent(ctx, eventId)
+
+	if err != nil {
+		return err
+	}
+
+	s.publisher.Publish(eventId, []byte("closeEvent/"))
+	s.publisher.Close(eventId)
+	return nil
+}
+
 func (s *eventService) GetByID(ctx context.Context, id string) (domain.EventInfo, error) {
 	event, err := s.repository.GetEventById(ctx, id)
 

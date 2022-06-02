@@ -19,6 +19,7 @@ func (h *Handler) initEventsAPI(router *gin.RouterGroup) {
 	events.POST("/range", h.getEventsByRange)
 	authenticated := events.Group("/", h.jwtAuth)
 	authenticated.POST("/create", h.createEvent)
+	authenticated.POST("/close", h.closeEvent)
 }
 
 type coordinates struct {
@@ -196,6 +197,47 @@ func (h *Handler) getEventsByRange(context *gin.Context) {
 	}
 
 	writeResponse(result, context)
+}
+
+// CloseEvent godoc
+// @Summary      Закрыть эвент
+// @Security     UserAuth
+// @Tags         events
+// @Accept       json
+// @Produce      json
+// @Content-Type application/json
+// @param        request body eventIDRequest true "body"
+// @Success      200 {object} apiResponse{result=string}
+// @Router       /v1/events/close [post]
+func (h *Handler) closeEvent(context *gin.Context) {
+	request := eventIDRequest{}
+	err := context.BindJSON(&request)
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	validationErr, err := validateId(request.EventID)
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	if len(validationErr) > 0 {
+		writeValidationErrResponse(validationErr, context)
+		return
+	}
+
+	err = h.services.Events.Close(context.Request.Context(), request.EventID, context.GetString("UserID"))
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	writeResponse(nil, context)
 }
 
 func validateCreateEventRequest(request createEventRequest) []string {

@@ -2,6 +2,11 @@ package domain
 
 import "time"
 
+const EventStateOpened = 0
+const EventStateClosed = 1
+
+type EventState int
+
 type Coordinates struct {
 	X float64 `bson:"x" json:"x"`
 	Y float64 `bson:"y" json:"y"`
@@ -28,6 +33,7 @@ type Event struct {
 	OwnerID      string        `bson:"owner_id"`
 	Name         string        `bson:"name"`
 	Address      string        `bson:"address"`
+	State        EventState    `bson:"state"`
 	Coordinates  Coordinates   `bson:"coordinates"`
 	CreatedAt    time.Time     `bson:"created_at"`
 	Users        []UserInfo    `bson:"users"`

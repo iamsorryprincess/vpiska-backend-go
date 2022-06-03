@@ -44,6 +44,7 @@ func (s *eventService) Create(ctx context.Context, input CreateEventInput) (doma
 		Name:         input.Name,
 		Address:      input.Address,
 		Coordinates:  input.Coordinates,
+		State:        domain.EventStateOpened,
 		CreatedAt:    time.Now(),
 		Users:        []domain.UserInfo{},
 		Media:        []domain.MediaInfo{},

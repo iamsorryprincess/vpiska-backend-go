@@ -59,9 +59,9 @@ type SetUserImageInput struct {
 type Users interface {
 	Create(ctx context.Context, input CreateUserInput) (domain.UserLogin, error)
 	Login(ctx context.Context, input LoginUserInput) (domain.UserLogin, error)
-	Update(ctx context.Context, input UpdateUserInput) (domain.UserLogin, error)
-	ChangePassword(ctx context.Context, input ChangePasswordInput) (domain.UserLogin, error)
-	SetUserImage(ctx context.Context, input *SetUserImageInput) (domain.UserLogin, error)
+	Update(ctx context.Context, input UpdateUserInput) (string, error)
+	ChangePassword(ctx context.Context, input ChangePasswordInput) (string, error)
+	SetUserImage(ctx context.Context, input *SetUserImageInput) (imageId string, accessToken string, err error)
 }
 
 type CreateEventInput struct {

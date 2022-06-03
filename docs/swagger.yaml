@@ -148,6 +148,18 @@ definitions:
       id:
         type: string
     type: object
+  v1.setImageResponse:
+    properties:
+      accessToken:
+        type: string
+      imageId:
+        type: string
+    type: object
+  v1.tokenResponse:
+    properties:
+      accessToken:
+        type: string
+    type: object
   v1.updateUserRequest:
     properties:
       name:
@@ -435,7 +447,7 @@ paths:
             - $ref: '#/definitions/v1.apiResponse'
             - properties:
                 result:
-                  $ref: '#/definitions/v1.loginResponse'
+                  $ref: '#/definitions/v1.setImageResponse'
               type: object
       security:
       - UserAuth: []
@@ -463,7 +475,7 @@ paths:
             - $ref: '#/definitions/v1.apiResponse'
             - properties:
                 result:
-                  $ref: '#/definitions/v1.loginResponse'
+                  $ref: '#/definitions/v1.tokenResponse'
               type: object
       security:
       - UserAuth: []
@@ -490,7 +502,7 @@ paths:
             - $ref: '#/definitions/v1.apiResponse'
             - properties:
                 result:
-                  $ref: '#/definitions/v1.loginResponse'
+                  $ref: '#/definitions/v1.tokenResponse'
               type: object
       security:
       - UserAuth: []

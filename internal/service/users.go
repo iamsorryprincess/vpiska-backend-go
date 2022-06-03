@@ -106,69 +106,65 @@ func (s *userService) Login(ctx context.Context, input LoginUserInput) (domain.U
 	return s.createLogin(model.ID, model.Name, model.Phone, model.ImageID, event.ID)
 }
 
-func (s *userService) Update(ctx context.Context, input UpdateUserInput) (domain.UserLogin, error) {
+func (s *userService) Update(ctx context.Context, input UpdateUserInput) (string, error) {
 	model, err := s.repository.GetUserByID(ctx, input.ID)
 
 	if err != nil {
-		return domain.UserLogin{}, err
-	}
-
-	event, err := s.eventRepository.GetEventByOwnerId(ctx, input.ID)
-
-	if err != nil && !errors.Is(err, domain.ErrEventNotFound) {
-		return domain.UserLogin{}, err
+		return "", err
 	}
 
 	if input.Name == "" && input.Phone == "" {
-		return s.createLogin(model.ID, model.Name, model.Phone, model.ImageID, event.ID)
+		return s.auth.GetAccessToken(auth.TokenData{
+			ID:      input.ID,
+			Name:    input.Name,
+			ImageID: model.ImageID,
+		})
 	}
 
 	if input.Name != "" && input.Phone != "" {
-		return s.updateNameAndPhone(ctx, input.ID, input.Name, input.Phone, model.ImageID, event.ID)
+		return s.updateNameAndPhone(ctx, input.ID, input.Name, input.Phone, model.ImageID)
 	}
 
 	if input.Name != "" {
-		return s.updateName(ctx, input.ID, input.Name, model.Phone, model.ImageID, event.ID)
+		return s.updateName(ctx, input.ID, input.Name, model.ImageID)
 	}
 
-	return s.updatePhone(ctx, input.ID, model.Name, input.Phone, model.ImageID, event.ID)
+	return s.updatePhone(ctx, input.ID, model.Name, input.Phone, model.ImageID)
 }
 
-func (s *userService) ChangePassword(ctx context.Context, input ChangePasswordInput) (domain.UserLogin, error) {
+func (s *userService) ChangePassword(ctx context.Context, input ChangePasswordInput) (string, error) {
 	model, err := s.repository.GetUserByID(ctx, input.ID)
 
 	if err != nil {
-		return domain.UserLogin{}, err
+		return "", err
 	}
 
 	hashedPassword, err := s.hashManager.HashPassword(model.Password)
 
 	if err != nil {
-		return domain.UserLogin{}, err
+		return "", err
 	}
 
 	if err = s.repository.ChangePassword(ctx, input.ID, hashedPassword); err != nil {
-		return domain.UserLogin{}, err
+		return "", err
 	}
 
-	event, err := s.eventRepository.GetEventByOwnerId(ctx, model.ID)
-
-	if err != nil && !errors.Is(err, domain.ErrEventNotFound) {
-		return domain.UserLogin{}, err
-	}
-
-	return s.createLogin(model.ID, model.Name, model.Phone, model.ImageID, event.ID)
+	return s.auth.GetAccessToken(auth.TokenData{
+		ID:      model.ID,
+		Name:    model.Name,
+		ImageID: model.ImageID,
+	})
 }
 
-func (s *userService) SetUserImage(ctx context.Context, input *SetUserImageInput) (domain.UserLogin, error) {
+func (s *userService) SetUserImage(ctx context.Context, input *SetUserImageInput) (imageId string, accessToken string, err error) {
 	user, err := s.repository.GetUserByID(ctx, input.UserID)
 
 	if err != nil {
-		return domain.UserLogin{}, err
+		return "", "", err
 	}
 
 	if user.ImageID == "" {
-		imageId, err := s.fileStorage.Create(ctx, &CreateMediaInput{
+		imageId, err = s.fileStorage.Create(ctx, &CreateMediaInput{
 			Name:        input.FileName,
 			ContentType: input.ContentType,
 			Size:        input.Size,
@@ -176,22 +172,26 @@ func (s *userService) SetUserImage(ctx context.Context, input *SetUserImageInput
 		})
 
 		if err != nil {
-			return domain.UserLogin{}, err
+			return "", "", err
 		}
 
 		err = s.repository.SetImageId(ctx, input.UserID, imageId)
 
 		if err != nil {
-			return domain.UserLogin{}, err
+			return "", "", err
 		}
 
-		event, err := s.eventRepository.GetEventByOwnerId(ctx, input.UserID)
+		accessToken, err = s.auth.GetAccessToken(auth.TokenData{
+			ID:      input.UserID,
+			Name:    user.Name,
+			ImageID: imageId,
+		})
 
-		if err != nil && !errors.Is(err, domain.ErrEventNotFound) {
-			return domain.UserLogin{}, err
+		if err != nil {
+			return "", "", err
 		}
 
-		return s.createLogin(user.ID, user.Name, user.Phone, imageId, event.ID)
+		return imageId, accessToken, nil
 	}
 
 	err = s.fileStorage.Update(ctx, user.ImageID, &CreateMediaInput{
@@ -202,16 +202,20 @@ func (s *userService) SetUserImage(ctx context.Context, input *SetUserImageInput
 	})
 
 	if err != nil {
-		return domain.UserLogin{}, err
+		return "", "", err
 	}
 
-	event, err := s.eventRepository.GetEventByOwnerId(ctx, input.UserID)
+	accessToken, err = s.auth.GetAccessToken(auth.TokenData{
+		ID:      input.UserID,
+		Name:    user.Name,
+		ImageID: imageId,
+	})
 
-	if err != nil && !errors.Is(err, domain.ErrEventNotFound) {
-		return domain.UserLogin{}, err
+	if err != nil {
+		return "", "", err
 	}
 
-	return s.createLogin(user.ID, user.Name, user.Phone, user.ImageID, event.ID)
+	return user.ImageID, accessToken, nil
 }
 
 func (s *userService) createLogin(id string, name string, phone string, imageId string, eventId string) (domain.UserLogin, error) {
@@ -243,70 +247,82 @@ func (s *userService) createLogin(id string, name string, phone string, imageId 
 	return result, nil
 }
 
-func (s *userService) updateNameAndPhone(ctx context.Context, userId string, name string, phone string, imageId string, eventId string) (domain.UserLogin, error) {
+func (s *userService) updateNameAndPhone(ctx context.Context, userId string, name string, phone string, imageId string) (string, error) {
 	namesCount, err := s.repository.GetNamesCount(ctx, name)
 
 	if err != nil {
-		return domain.UserLogin{}, err
+		return "", err
 	}
 
 	phonesCount, err := s.repository.GetPhonesCount(ctx, phone)
 
 	if err != nil {
-		return domain.UserLogin{}, err
+		return "", err
 	}
 
 	if namesCount > 0 && phonesCount > 0 {
-		return domain.UserLogin{}, domain.ErrNameAndPhoneAlreadyUse
+		return "", domain.ErrNameAndPhoneAlreadyUse
 	}
 
 	if namesCount > 0 {
-		return domain.UserLogin{}, domain.ErrNameAlreadyUse
+		return "", domain.ErrNameAlreadyUse
 	}
 
 	if phonesCount > 0 {
-		return domain.UserLogin{}, domain.ErrPhoneAlreadyUse
+		return "", domain.ErrPhoneAlreadyUse
 	}
 
 	if err = s.repository.UpdateNameAndPhone(ctx, userId, name, phone); err != nil {
-		return domain.UserLogin{}, err
+		return "", err
 	}
 
-	return s.createLogin(userId, name, phone, imageId, eventId)
+	return s.auth.GetAccessToken(auth.TokenData{
+		ID:      userId,
+		Name:    name,
+		ImageID: imageId,
+	})
 }
 
-func (s *userService) updateName(ctx context.Context, userId string, name string, phone string, imageId string, eventId string) (domain.UserLogin, error) {
+func (s *userService) updateName(ctx context.Context, userId string, name string, imageId string) (string, error) {
 	namesCount, err := s.repository.GetNamesCount(ctx, name)
 
 	if err != nil {
-		return domain.UserLogin{}, err
+		return "", err
 	}
 
 	if namesCount > 0 {
-		return domain.UserLogin{}, domain.ErrNameAlreadyUse
+		return "", err
 	}
 
 	if err = s.repository.UpdateName(ctx, userId, name); err != nil {
-		return domain.UserLogin{}, err
+		return "", err
 	}
 
-	return s.createLogin(userId, name, phone, imageId, eventId)
+	return s.auth.GetAccessToken(auth.TokenData{
+		ID:      userId,
+		Name:    name,
+		ImageID: imageId,
+	})
 }
 
-func (s *userService) updatePhone(ctx context.Context, userId string, name string, phone string, imageId string, eventId string) (domain.UserLogin, error) {
+func (s *userService) updatePhone(ctx context.Context, userId string, name string, phone string, imageId string) (string, error) {
 	phonesCount, err := s.repository.GetPhonesCount(ctx, phone)
 
 	if err != nil {
-		return domain.UserLogin{}, err
+		return "", err
 	}
 
 	if phonesCount > 0 {
-		return domain.UserLogin{}, domain.ErrPhoneAlreadyUse
+		return "", err
 	}
 
 	if err = s.repository.UpdatePhone(ctx, userId, phone); err != nil {
-		return domain.UserLogin{}, err
+		return "", err
 	}
 
-	return s.createLogin(userId, name, phone, imageId, eventId)
+	return s.auth.GetAccessToken(auth.TokenData{
+		ID:      userId,
+		Name:    name,
+		ImageID: imageId,
+	})
 }

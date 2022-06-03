@@ -20,23 +20,6 @@ func newMongoMedia(db *mongo.Database, collectionName string) Media {
 	}
 }
 
-func (r *mediaRepository) GetAll(ctx context.Context) ([]domain.Media, error) {
-	result, err := r.db.Find(ctx, bson.D{{}})
-
-	if err != nil {
-		return nil, err
-	}
-
-	var media []domain.Media
-	err = result.All(ctx, &media)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return media, nil
-}
-
 func (r *mediaRepository) GetMedia(ctx context.Context, id string) (domain.Media, error) {
 	filter := bson.D{{"_id", id}}
 	media := domain.Media{}

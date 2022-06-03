@@ -492,7 +492,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "$ref": "#/definitions/v1.loginResponse"
+                                            "$ref": "#/definitions/v1.setImageResponse"
                                         }
                                     }
                                 }
@@ -542,7 +542,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "$ref": "#/definitions/v1.loginResponse"
+                                            "$ref": "#/definitions/v1.tokenResponse"
                                         }
                                     }
                                 }
@@ -591,7 +591,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "$ref": "#/definitions/v1.loginResponse"
+                                            "$ref": "#/definitions/v1.tokenResponse"
                                         }
                                     }
                                 }
@@ -828,6 +828,25 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.setImageResponse": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "imageId": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.tokenResponse": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
                     "type": "string"
                 }
             }

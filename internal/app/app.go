@@ -63,20 +63,7 @@ func Run() {
 		return
 	}
 
-	mediasMetadata, err := repositories.Media.GetAll(context.Background())
-
-	if err != nil {
-		appLogger.LogError(err)
-		return
-	}
-
-	mediaIds := make([]string, len(mediasMetadata))
-
-	for index, mediaMetadata := range mediasMetadata {
-		mediaIds[index] = mediaMetadata.ID
-	}
-
-	fileStorage, err := storage.NewLocalFileStorage("media", mediaIds)
+	fileStorage, err := storage.NewLocalFileStorage("media")
 
 	if err != nil {
 		appLogger.LogError(err)

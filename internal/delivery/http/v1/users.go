@@ -139,6 +139,10 @@ func (h *Handler) loginUser(context *gin.Context) {
 	writeResponse(result, context)
 }
 
+type tokenResponse struct {
+	AccessToken string `json:"accessToken"`
+}
+
 type changePasswordRequest struct {
 	Password        string `json:"password"`
 	ConfirmPassword string `json:"confirmPassword"`
@@ -152,7 +156,7 @@ type changePasswordRequest struct {
 // @Produce      json
 // @Content-Type application/json
 // @param        request body changePasswordRequest true "body"
-// @Success      200 {object} apiResponse{result=loginResponse}
+// @Success      200 {object} apiResponse{result=tokenResponse}
 // @Router       /v1/users/password/change [post]
 func (h *Handler) changePassword(context *gin.Context) {
 	request := changePasswordRequest{}
@@ -175,7 +179,7 @@ func (h *Handler) changePassword(context *gin.Context) {
 		return
 	}
 
-	result, err := h.services.Users.ChangePassword(context.Request.Context(), service.ChangePasswordInput{
+	accessToken, err := h.services.Users.ChangePassword(context.Request.Context(), service.ChangePasswordInput{
 		ID:       context.GetString("UserID"),
 		Password: request.Password,
 	})
@@ -185,7 +189,9 @@ func (h *Handler) changePassword(context *gin.Context) {
 		return
 	}
 
-	writeResponse(result, context)
+	writeResponse(tokenResponse{
+		AccessToken: accessToken,
+	}, context)
 }
 
 type updateUserRequest struct {
@@ -201,7 +207,7 @@ type updateUserRequest struct {
 // @Produce      json
 // @Content-Type application/json
 // @param        request body updateUserRequest false "body"
-// @Success      200 {object} apiResponse{result=loginResponse}
+// @Success      200 {object} apiResponse{result=tokenResponse}
 // @Router       /v1/users/update [post]
 func (h *Handler) updateUser(context *gin.Context) {
 	request := updateUserRequest{}
@@ -224,7 +230,7 @@ func (h *Handler) updateUser(context *gin.Context) {
 		return
 	}
 
-	result, err := h.services.Users.Update(context.Request.Context(), service.UpdateUserInput{
+	accessToken, err := h.services.Users.Update(context.Request.Context(), service.UpdateUserInput{
 		ID:    context.GetString("UserID"),
 		Name:  request.Name,
 		Phone: request.Phone,
@@ -235,7 +241,14 @@ func (h *Handler) updateUser(context *gin.Context) {
 		return
 	}
 
-	writeResponse(result, context)
+	writeResponse(tokenResponse{
+		AccessToken: accessToken,
+	}, context)
+}
+
+type setImageResponse struct {
+	ImageID     string `json:"imageId"`
+	AccessToken string `json:"accessToken"`
 }
 
 // SetUserImage godoc
@@ -246,7 +259,7 @@ func (h *Handler) updateUser(context *gin.Context) {
 // @Produce      json
 // @Content-Type application/json
 // @param        image formData file true "file"
-// @Success      200 {object} apiResponse{result=loginResponse}
+// @Success      200 {object} apiResponse{result=setImageResponse}
 // @Router       /v1/users/media/set [post]
 func (h *Handler) setUserImage(context *gin.Context) {
 	fileData, header, err := parseFormFile("image", context, h.logger)
@@ -255,7 +268,7 @@ func (h *Handler) setUserImage(context *gin.Context) {
 		return
 	}
 
-	result, err := h.services.Users.SetUserImage(context.Request.Context(), &service.SetUserImageInput{
+	imageId, accessToken, err := h.services.Users.SetUserImage(context.Request.Context(), &service.SetUserImageInput{
 		UserID:      context.GetString("UserID"),
 		FileName:    header.Filename,
 		ContentType: header.Header.Get("Content-Type"),
@@ -268,7 +281,10 @@ func (h *Handler) setUserImage(context *gin.Context) {
 		return
 	}
 
-	writeResponse(result, context)
+	writeResponse(setImageResponse{
+		ImageID:     imageId,
+		AccessToken: accessToken,
+	}, context)
 }
 
 func validateCreateUserRequest(request createUserRequest) ([]string, error) {

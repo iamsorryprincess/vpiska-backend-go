@@ -10,7 +10,6 @@ import (
 )
 
 type Media interface {
-	GetAll(ctx context.Context) ([]domain.Media, error)
 	GetMedia(ctx context.Context, id string) (domain.Media, error)
 	CreateMedia(ctx context.Context, media domain.Media) (string, error)
 	UpdateMedia(ctx context.Context, media domain.Media) error

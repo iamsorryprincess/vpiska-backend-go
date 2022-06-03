@@ -20,6 +20,8 @@ func (h *Handler) initEventsAPI(router *gin.RouterGroup) {
 	authenticated := events.Group("/", h.jwtAuth)
 	authenticated.POST("/create", h.createEvent)
 	authenticated.POST("/close", h.closeEvent)
+	authenticated.POST("/media/add", h.addMediaToEvent)
+	authenticated.POST("/media/remove", h.removeMediaFromEvent)
 }
 
 type coordinates struct {
@@ -231,6 +233,117 @@ func (h *Handler) closeEvent(context *gin.Context) {
 	}
 
 	err = h.services.Events.Close(context.Request.Context(), request.EventID, context.GetString("UserID"))
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	writeResponse(nil, context)
+}
+
+// AddMediaToEvent godoc
+// @Summary      добавить медиа к евенту
+// @Security     UserAuth
+// @Tags         events
+// @Accept       multipart/form-data
+// @Produce      json
+// @Content-Type application/json
+// @param        eventId formData string true "event id"
+// @param        media formData file true "file"
+// @Success      200 {object} apiResponse{result=string}
+// @Router       /v1/events/media/add [post]
+func (h *Handler) addMediaToEvent(context *gin.Context) {
+	eventId := context.PostForm("eventId")
+	validationErrs, err := validateId(eventId)
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	if len(validationErrs) > 0 {
+		writeValidationErrResponse(validationErrs, context)
+		return
+	}
+
+	fileData, header, err := parseFormFile("media", context, h.logger)
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	err = h.services.Events.AddMedia(context.Request.Context(), &service.AddMediaInput{
+		EventID:     eventId,
+		UserID:      context.GetString("UserID"),
+		FileName:    header.Filename,
+		ContentType: header.Header.Get("Content-Type"),
+		FileSize:    header.Size,
+		FileData:    fileData,
+	})
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	writeResponse(nil, context)
+}
+
+type removeMediaRequest struct {
+	EventID string `json:"eventId"`
+	MediaID string `json:"mediaId"`
+}
+
+// RemoveMediaFromEvent godoc
+// @Summary      удалить медиа из евента
+// @Security     UserAuth
+// @Tags         events
+// @Accept       application/json
+// @Produce      json
+// @Content-Type application/json
+// @param        request body removeMediaRequest true "body"
+// @Success      200 {object} apiResponse{result=string}
+// @Router       /v1/events/media/remove [post]
+func (h *Handler) removeMediaFromEvent(context *gin.Context) {
+	request := removeMediaRequest{}
+	err := context.BindJSON(&request)
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	validationErr, err := validateId(request.EventID)
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	if len(validationErr) > 0 {
+		writeValidationErrResponse(validationErr, context)
+		return
+	}
+
+	validationErr, err = validateId(request.MediaID)
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	if len(validationErr) > 0 {
+		writeValidationErrResponse(validationErr, context)
+		return
+	}
+
+	err = h.services.Events.RemoveMedia(context.Request.Context(), service.RemoveMediaInput{
+		EventID: request.EventID,
+		MediaID: request.MediaID,
+		UserID:  context.GetString("UserID"),
+	})
 
 	if err != nil {
 		writeErrorResponse(err, h.logger, context)

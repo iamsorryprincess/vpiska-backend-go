@@ -13,16 +13,18 @@ import (
 )
 
 type eventService struct {
-	logger     logger.Logger
-	repository repository.Events
-	publisher  Publisher
+	logger      logger.Logger
+	repository  repository.Events
+	publisher   Publisher
+	fileStorage Media
 }
 
-func NewEventService(logger logger.Logger, events repository.Events, publisher Publisher) Events {
+func NewEventService(logger logger.Logger, events repository.Events, publisher Publisher, fileStorage Media) Events {
 	return &eventService{
-		logger:     logger,
-		repository: events,
-		publisher:  publisher,
+		logger:      logger,
+		repository:  events,
+		publisher:   publisher,
+		fileStorage: fileStorage,
 	}
 }
 
@@ -192,4 +194,72 @@ func (s *eventService) SendChatMessage(ctx context.Context, input ChatMessageInp
 
 	s.publisher.Publish(input.EventID, []byte("chatMessage/"+string(data)))
 	return nil
+}
+
+func (s *eventService) AddMedia(ctx context.Context, input *AddMediaInput) error {
+	event, err := s.repository.GetEventById(ctx, input.EventID)
+
+	if err != nil {
+		return err
+	}
+
+	if event.OwnerID != input.UserID {
+		return domain.ErrUserIsNotOwner
+	}
+
+	mediaId, err := s.fileStorage.Create(ctx, &CreateMediaInput{
+		Name:        input.FileName,
+		ContentType: input.ContentType,
+		Size:        input.FileSize,
+		Data:        input.FileData,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	err = s.repository.AddMedia(ctx, input.EventID, domain.MediaInfo{
+		ID:          mediaId,
+		ContentType: input.ContentType,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	s.publisher.Publish(input.EventID, []byte("mediaAdded/"+mediaId))
+	return nil
+}
+
+func (s *eventService) RemoveMedia(ctx context.Context, input RemoveMediaInput) error {
+	event, err := s.repository.GetEventById(ctx, input.EventID)
+
+	if err != nil {
+		return err
+	}
+
+	if event.OwnerID != input.UserID {
+		return domain.ErrUserIsNotOwner
+	}
+
+	for _, mediaInfo := range event.Media {
+		if mediaInfo.ID == input.MediaID {
+			err = s.fileStorage.Delete(ctx, input.MediaID)
+
+			if err != nil {
+				return err
+			}
+
+			err = s.repository.RemoveMedia(ctx, input.EventID, input.MediaID)
+
+			if err != nil {
+				return err
+			}
+
+			s.publisher.Publish(input.EventID, []byte("mediaRemoved/"+input.MediaID))
+			return nil
+		}
+	}
+
+	return domain.ErrMediaNotFound
 }

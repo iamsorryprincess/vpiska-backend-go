@@ -148,6 +148,13 @@ definitions:
       id:
         type: string
     type: object
+  v1.removeMediaRequest:
+    properties:
+      eventId:
+        type: string
+      mediaId:
+        type: string
+    type: object
   v1.setImageResponse:
     properties:
       accessToken:
@@ -253,6 +260,66 @@ paths:
                   $ref: '#/definitions/v1.eventResponse'
               type: object
       summary: Получить эвент по идентификатору
+      tags:
+      - events
+  /v1/events/media/add:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: event id
+        in: formData
+        name: eventId
+        required: true
+        type: string
+      - description: file
+        in: formData
+        name: media
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.apiResponse'
+            - properties:
+                result:
+                  type: string
+              type: object
+      security:
+      - UserAuth: []
+      summary: добавить медиа к евенту
+      tags:
+      - events
+  /v1/events/media/remove:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.removeMediaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.apiResponse'
+            - properties:
+                result:
+                  type: string
+              type: object
+      security:
+      - UserAuth: []
+      summary: удалить медиа из евента
       tags:
       - events
   /v1/events/range:

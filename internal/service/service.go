@@ -89,6 +89,21 @@ type ChatMessageInput struct {
 	Message     string
 }
 
+type AddMediaInput struct {
+	EventID     string
+	UserID      string
+	FileName    string
+	ContentType string
+	FileSize    int64
+	FileData    []byte
+}
+
+type RemoveMediaInput struct {
+	EventID string
+	UserID  string
+	MediaID string
+}
+
 type Events interface {
 	Create(ctx context.Context, input CreateEventInput) (domain.EventInfo, error)
 	Close(ctx context.Context, eventId string, userId string) error
@@ -97,6 +112,8 @@ type Events interface {
 	AddUserInfo(ctx context.Context, input AddUserInfoInput) error
 	RemoveUserInfo(ctx context.Context, eventId string, userId string) error
 	SendChatMessage(ctx context.Context, input ChatMessageInput) error
+	AddMedia(ctx context.Context, input *AddMediaInput) error
+	RemoveMedia(ctx context.Context, input RemoveMediaInput) error
 }
 
 type Subscriber interface {
@@ -130,7 +147,7 @@ func NewServices(
 	return &Services{
 		Media:     media,
 		Users:     newUserService(repositories.Users, repositories.Events, hashManager, auth, media),
-		Events:    NewEventService(logger, repositories.Events, pub),
+		Events:    NewEventService(logger, repositories.Events, pub, media),
 		Publisher: pub,
 	}, nil
 }

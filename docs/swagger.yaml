@@ -167,6 +167,15 @@ definitions:
       accessToken:
         type: string
     type: object
+  v1.updateEventRequest:
+    properties:
+      address:
+        type: string
+      coordinates:
+        $ref: '#/definitions/v1.coordinates'
+      eventId:
+        type: string
+    type: object
   v1.updateUserRequest:
     properties:
       name:
@@ -346,6 +355,34 @@ paths:
                   $ref: '#/definitions/v1.eventRangeData'
               type: object
       summary: Получить эвенты по области
+      tags:
+      - events
+  /v1/events/update:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.updateEventRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.apiResponse'
+            - properties:
+                result:
+                  type: string
+              type: object
+      security:
+      - UserAuth: []
+      summary: Обновить эвент
       tags:
       - events
   /v1/media:

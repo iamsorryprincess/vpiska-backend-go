@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
@@ -91,6 +90,47 @@ func (s *eventService) Close(ctx context.Context, eventId string, userId string)
 	return nil
 }
 
+type eventUpdated struct {
+	EventID     string             `json:"eventId"`
+	Name        string             `json:"name"`
+	Address     string             `json:"address"`
+	UsersCount  int                `json:"usersCount"`
+	Coordinates domain.Coordinates `json:"coordinates"`
+}
+
+func (s *eventService) Update(ctx context.Context, input UpdateEventInput) error {
+	event, err := s.repository.GetEventById(ctx, input.EventID)
+
+	if err != nil {
+		return err
+	}
+
+	if event.OwnerID != input.UserID {
+		return domain.ErrUserIsNotOwner
+	}
+
+	err = s.repository.UpdateEvent(ctx, input.EventID, input.Address, input.Coordinates)
+
+	if err != nil {
+		return err
+	}
+
+	data, err := json.Marshal(eventUpdated{
+		EventID:     event.ID,
+		Name:        event.Name,
+		Address:     input.Address,
+		UsersCount:  len(event.Users),
+		Coordinates: event.Coordinates,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	s.publisher.Publish(input.EventID, []byte("eventUpdated/"+string(data)))
+	return nil
+}
+
 func (s *eventService) GetByID(ctx context.Context, id string) (domain.EventInfo, error) {
 	event, err := s.repository.GetEventById(ctx, id)
 
@@ -147,7 +187,19 @@ func (s *eventService) AddUserInfo(ctx context.Context, input AddUserInfoInput) 
 		return err
 	}
 
-	s.publisher.Publish(input.EventID, []byte(fmt.Sprintf("usersCountUpdated/%d", len(event.Users)+1)))
+	data, err := json.Marshal(eventUpdated{
+		EventID:     event.ID,
+		Name:        event.Name,
+		Address:     event.Address,
+		UsersCount:  len(event.Users) + 1,
+		Coordinates: event.Coordinates,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	s.publisher.Publish(input.EventID, []byte("eventUpdated/"+string(data)))
 	return nil
 }
 
@@ -166,7 +218,19 @@ func (s *eventService) RemoveUserInfo(ctx context.Context, eventId string, userI
 				return err
 			}
 
-			s.publisher.Publish(eventId, []byte(fmt.Sprintf("usersCountUpdated/%d", len(event.Users)-1)))
+			data, err := json.Marshal(eventUpdated{
+				EventID:     event.ID,
+				Name:        event.Name,
+				Address:     event.Address,
+				UsersCount:  len(event.Users) - 1,
+				Coordinates: event.Coordinates,
+			})
+
+			if err != nil {
+				return err
+			}
+
+			s.publisher.Publish(eventId, []byte("eventUpdated/"+string(data)))
 			return nil
 		}
 	}

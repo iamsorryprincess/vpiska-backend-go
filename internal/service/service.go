@@ -98,6 +98,13 @@ type AddMediaInput struct {
 	FileData    []byte
 }
 
+type UpdateEventInput struct {
+	UserID      string
+	EventID     string
+	Address     string
+	Coordinates domain.Coordinates
+}
+
 type RemoveMediaInput struct {
 	EventID string
 	UserID  string
@@ -107,6 +114,7 @@ type RemoveMediaInput struct {
 type Events interface {
 	Create(ctx context.Context, input CreateEventInput) (domain.EventInfo, error)
 	Close(ctx context.Context, eventId string, userId string) error
+	Update(ctx context.Context, input UpdateEventInput) error
 	GetByID(ctx context.Context, id string) (domain.EventInfo, error)
 	GetByRange(ctx context.Context, input GetByRangeInput) ([]domain.EventRangeData, error)
 	AddUserInfo(ctx context.Context, input AddUserInfoInput) error

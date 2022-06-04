@@ -19,6 +19,7 @@ func (h *Handler) initEventsAPI(router *gin.RouterGroup) {
 	events.POST("/range", h.getEventsByRange)
 	authenticated := events.Group("/", h.jwtAuth)
 	authenticated.POST("/create", h.createEvent)
+	authenticated.POST("/update", h.updateEvent)
 	authenticated.POST("/close", h.closeEvent)
 	authenticated.POST("/media/add", h.addMediaToEvent)
 	authenticated.POST("/media/remove", h.removeMediaFromEvent)
@@ -199,6 +200,61 @@ func (h *Handler) getEventsByRange(context *gin.Context) {
 	}
 
 	writeResponse(result, context)
+}
+
+type updateEventRequest struct {
+	EventID     string       `json:"eventId"`
+	Address     string       `json:"address"`
+	Coordinates *coordinates `json:"coordinates"`
+}
+
+// UpdateEvent godoc
+// @Summary      Обновить эвент
+// @Security     UserAuth
+// @Tags         events
+// @Accept       json
+// @Produce      json
+// @Content-Type application/json
+// @param        request body updateEventRequest true "body"
+// @Success      200 {object} apiResponse{result=string}
+// @Router       /v1/events/update [post]
+func (h *Handler) updateEvent(context *gin.Context) {
+	request := updateEventRequest{}
+	err := context.BindJSON(&request)
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	validationErrs, err := validateUpdateEventRequest(request)
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	if len(validationErrs) > 0 {
+		writeValidationErrResponse(validationErrs, context)
+		return
+	}
+
+	err = h.services.Events.Update(context.Request.Context(), service.UpdateEventInput{
+		UserID:  context.GetString("UserID"),
+		EventID: request.EventID,
+		Address: request.Address,
+		Coordinates: domain.Coordinates{
+			X: *request.Coordinates.X,
+			Y: *request.Coordinates.Y,
+		},
+	})
+
+	if err != nil {
+		writeErrorResponse(err, h.logger, context)
+		return
+	}
+
+	writeResponse(nil, context)
 }
 
 // CloseEvent godoc
@@ -391,4 +447,24 @@ func validateGetByRangeRequest(request getByRangeRequest) []string {
 	}
 
 	return validationErrors
+}
+
+func validateUpdateEventRequest(request updateEventRequest) ([]string, error) {
+	validationErrors, err := validateId(request.EventID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if request.Address == "" {
+		validationErrors = append(validationErrors, emptyAddressError)
+	}
+
+	if request.Coordinates == nil {
+		validationErrors = append(validationErrors, emptyCoordinatesError)
+	} else if request.Coordinates.X == nil || request.Coordinates.Y == nil {
+		validationErrors = append(validationErrors, emptyCoordinatesError)
+	}
+
+	return validationErrors, nil
 }

@@ -1,0 +1,50 @@
+version: '3.4'
+
+services:
+  mongo:
+    image: mongo:4.4.10
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=kekit*
+      - MONGO_INITDB_ROOT_PASSWORD=qweasd123*
+    ports:
+      - "27017:27017"
+    volumes:
+      - /home/vpiska/data/mongo:/data/db
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+      resources:
+        limits:
+          memory: 1024M
+          cpus: "1.0"
+        reservations:
+          memory: 512M
+          cpus: "0.5"
+
+  api:
+    image: api
+    environment:
+      - APP_ENV=prod
+    volumes:
+      - /home/vpiska/data/media:/app/media
+    build:
+      context: .
+      dockerfile: Dockerfile
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+      resources:
+        limits:
+          memory: 10240M
+          cpus: "3"
+        reservations:
+          memory: 5120M
+          cpus: "1.5"

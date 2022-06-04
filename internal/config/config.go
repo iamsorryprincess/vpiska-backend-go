@@ -26,7 +26,19 @@ type Configuration struct {
 }
 
 func Parse() (*Configuration, error) {
-	f, openFileErr := os.Open("configs/main.yml")
+	env := os.Getenv("APP_ENV")
+	configPath := ""
+
+	switch env {
+	case "prod":
+		configPath = "configs/prod.yml"
+		break
+	default:
+		configPath = "configs/test.yml"
+		break
+	}
+
+	f, openFileErr := os.Open(configPath)
 
 	if openFileErr != nil {
 		return nil, openFileErr

@@ -16,7 +16,20 @@ type logger struct {
 }
 
 func NewLogLogger() (Logger, io.Closer, error) {
-	logFile, err := os.OpenFile("logs.txt", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
+	_, err := os.Stat("logs")
+
+	if err != nil {
+		if os.IsNotExist(err) {
+			mkdirErr := os.Mkdir("logs", 0777)
+			if mkdirErr != nil {
+				return nil, nil, mkdirErr
+			}
+		} else {
+			return nil, nil, err
+		}
+	}
+
+	logFile, err := os.OpenFile("logs/logs.txt", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
 
 	if err != nil {
 		return nil, nil, err

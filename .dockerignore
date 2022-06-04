@@ -1,6 +1,6 @@
 Dockerfile
 docker-compose.yml
 .gitignore
-logs.txt
+logs
 media
 Makefile

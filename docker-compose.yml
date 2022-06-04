@@ -31,6 +31,7 @@ services:
       - APP_ENV=prod
     volumes:
       - /home/vpiska/data/media:/app/media
+      - /home/vpiska/data/logs:/app/logs
     build:
       context: .
       dockerfile: Dockerfile

@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
@@ -15,6 +16,7 @@ import (
 )
 
 const idRegexp = `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`
+const pingPeriod = time.Second * 120
 
 type Handler struct {
 	logger       logger.Logger
@@ -122,6 +124,8 @@ func (h *Handler) readMessages(ctx socketContext, conn *connection,
 	closeHandler func(ctx socketContext, subscriber service.Subscriber)) {
 	defer conn.Close()
 	defer closeHandler(ctx, subscriber)
+	go ping(conn)
+
 	for {
 		messageType, data, err := conn.ReadMessage()
 
@@ -159,6 +163,32 @@ func (h *Handler) readMessages(ctx socketContext, conn *connection,
 				h.logger.LogError(err)
 			}
 			return
+		}
+	}
+}
+
+func ping(conn *connection) {
+	ticker := time.NewTicker(pingPeriod * 9 / 10)
+	err := conn.SetReadDeadline(time.Now().Add(pingPeriod))
+
+	if err != nil {
+		return
+	}
+
+	conn.SetPongHandler(func(string) error {
+		return conn.SetReadDeadline(time.Now().Add(pingPeriod))
+	})
+
+	defer func() {
+		ticker.Stop()
+		conn.Close()
+	}()
+	for {
+		select {
+		case <-ticker.C:
+			if err := conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
+				return
+			}
 		}
 	}
 }

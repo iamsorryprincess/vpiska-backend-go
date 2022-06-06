@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +12,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-func NewHandler(services *service.Services, logger logger.Logger, tokenManager auth.TokenManager, port int) http.Handler {
+func NewHandler(services *service.Services, logger logger.Logger, tokenManager auth.TokenManager) http.Handler {
 	gin.SetMode("release")
 	ginEngine := gin.New()
 
@@ -21,8 +20,7 @@ func NewHandler(services *service.Services, logger logger.Logger, tokenManager a
 		context.Writer.WriteHeader(http.StatusOK)
 	})
 
-	swaggerUrl := fmt.Sprintf("http://localhost:%d/swagger/doc.json", port)
-	swaggerHandler := httpSwagger.Handler(httpSwagger.URL(swaggerUrl))
+	swaggerHandler := httpSwagger.Handler(httpSwagger.URL("doc.json"))
 	ginEngine.GET("/swagger/*any", gin.WrapH(swaggerHandler))
 	apiRouter := ginEngine.Group("/api")
 	handler := v1.NewHandler(logger, services, tokenManager)

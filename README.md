@@ -1,4 +1,5 @@
 # vpiska-backend
+[![Deploy](https://github.com/iamsorryprincess/vpiska-backend-go/workflows/build-deploy/badge.svg)](https://github.com/iamsorryprincess/vpiska-backend-go/actions)
 ____
 
 ## WebSocket эвента

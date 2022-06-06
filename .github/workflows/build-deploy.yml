@@ -1,0 +1,13 @@
+name: build-deploy
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-deploy:
+    runs-on: [self-hosted, linux, X64]
+    steps:
+      - uses: actions/checkout@v2
+      - name: build
+        run: docker-compose build api

@@ -6,7 +6,7 @@ ____
 ____
 
 Url для подключения - **wss://vp1ska.ru/api/v1/websockets/event?accessToken=qweasd&eventId=E9F6D9A2-2FF4-4A15-96EB-7C13F47F9CA8**    
-accessToken - jwt token юзера, если он есть, если нет (юзер не зареган), то не передавать параметр токена    
+accessToken - jwt token юзера, если он есть, если токен пуст, то в ответ получите 401  
 eventId - id эвента    
 
 ### сообщения приходящие с бэка

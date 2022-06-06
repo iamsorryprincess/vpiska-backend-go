@@ -52,3 +52,9 @@ func (p *publisher) Close(eventId string) {
 		subscriber.OnClose()
 	}
 }
+
+func (p *publisher) CloseAll() {
+	for eventId, _ := range p.subscriptions {
+		p.Close(eventId)
+	}
+}

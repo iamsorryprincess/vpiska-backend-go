@@ -134,6 +134,7 @@ type Publisher interface {
 	Unsubscribe(eventId string, subscriber Subscriber)
 	Publish(eventId string, message []byte)
 	Close(eventId string)
+	CloseAll()
 }
 
 type Services struct {

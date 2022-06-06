@@ -6,8 +6,11 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - /home/vpiska/data/media:/etc/nginx/media
+      - ../../../../ssl/vp1ska.ru.crt:/etc/nginx/vp1ska.ru.crt
+      - ../../../../ssl/vp1ska.ru.key:/etc/nginx/vp1ska.ru.key
     ports:
       - "80:80"
+      - "443:443"
     deploy:
       replicas: 1
       restart_policy:

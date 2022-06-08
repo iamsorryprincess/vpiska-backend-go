@@ -3,13 +3,13 @@ package service
 import "sync"
 
 type publisher struct {
-	mutex         sync.Mutex
+	mutex         sync.RWMutex
 	subscriptions map[string][]Subscriber
 }
 
 func newPublisher() Publisher {
 	return &publisher{
-		mutex:         sync.Mutex{},
+		mutex:         sync.RWMutex{},
 		subscriptions: make(map[string][]Subscriber),
 	}
 }
@@ -21,7 +21,10 @@ func (p *publisher) Subscribe(eventId string, subscriber Subscriber) {
 }
 
 func (p *publisher) Unsubscribe(eventId string, subscriber Subscriber) {
-	for i, sub := range p.subscriptions[eventId] {
+	p.mutex.RLock()
+	subs := p.subscriptions[eventId]
+	p.mutex.RUnlock()
+	for i, sub := range subs {
 		if sub == subscriber {
 			p.mutex.Lock()
 			p.subscriptions[eventId] = append(p.subscriptions[eventId][:i], p.subscriptions[eventId][i+1:]...)
@@ -32,29 +35,30 @@ func (p *publisher) Unsubscribe(eventId string, subscriber Subscriber) {
 }
 
 func (p *publisher) Publish(eventId string, message []byte) {
-	for _, subscriber := range p.subscriptions[eventId] {
+	p.mutex.RLock()
+	subs := p.subscriptions[eventId]
+	p.mutex.RUnlock()
+	for _, subscriber := range subs {
 		subscriber.OnReceive(message)
 	}
 }
 
 func (p *publisher) Close(eventId string) {
-	temp := make([]Subscriber, len(p.subscriptions[eventId]))
+	p.mutex.RLock()
+	subs := p.subscriptions[eventId]
+	p.mutex.RUnlock()
 
-	for i, item := range p.subscriptions[eventId] {
-		temp[i] = item
+	for _, subscriber := range subs {
+		subscriber.OnClose()
 	}
 
 	p.mutex.Lock()
 	delete(p.subscriptions, eventId)
 	p.mutex.Unlock()
-
-	for _, subscriber := range temp {
-		subscriber.OnClose()
-	}
 }
 
 func (p *publisher) CloseAll() {
-	for eventId, _ := range p.subscriptions {
+	for eventId := range p.subscriptions {
 		p.Close(eventId)
 	}
 }

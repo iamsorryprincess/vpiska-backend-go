@@ -9,6 +9,7 @@ import (
 
 type localFileStorage struct {
 	path    string
+	mutex   sync.RWMutex
 	mutexes map[string]*sync.Mutex
 }
 
@@ -21,6 +22,7 @@ func NewLocalFileStorage(path string) (FileStorage, error) {
 
 	return &localFileStorage{
 		path:    path,
+		mutex:   sync.RWMutex{},
 		mutexes: make(map[string]*sync.Mutex),
 	}, nil
 }
@@ -53,11 +55,15 @@ func (s *localFileStorage) Get(id string) ([]byte, error) {
 }
 
 func (s *localFileStorage) Upload(id string, data []byte) error {
+	s.mutex.RLock()
 	mutex := s.mutexes[id]
+	s.mutex.RUnlock()
 
 	if mutex == nil {
 		mutex = &sync.Mutex{}
+		s.mutex.Lock()
 		s.mutexes[id] = mutex
+		s.mutex.Unlock()
 	}
 
 	mutex.Lock()
@@ -79,11 +85,15 @@ func (s *localFileStorage) Upload(id string, data []byte) error {
 }
 
 func (s *localFileStorage) Delete(id string) error {
+	s.mutex.RLock()
 	mutex := s.mutexes[id]
+	s.mutex.RUnlock()
 
 	if mutex == nil {
 		mutex = &sync.Mutex{}
+		s.mutex.Lock()
 		s.mutexes[id] = mutex
+		s.mutex.Unlock()
 	}
 
 	mutex.Lock()

@@ -1,35 +1,23 @@
 package v1
 
 import (
-	"github.com/gorilla/websocket"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
-	"github.com/iamsorryprincess/vpiska-backend-go/pkg/logger"
 )
 
 type subscriber struct {
-	logger logger.Logger
-	conn   *connection
+	ch chan<- []byte
 }
 
-func newSubscriber(logger logger.Logger, connection *connection) service.Subscriber {
+func newSubscriber(ch chan<- []byte) service.Subscriber {
 	return &subscriber{
-		logger: logger,
-		conn:   connection,
+		ch: ch,
 	}
 }
 
 func (s *subscriber) OnReceive(message []byte) {
-	err := s.conn.WriteMessage(websocket.TextMessage, message)
-
-	if err != nil {
-		s.logger.LogError(err)
-	}
+	s.ch <- message
 }
 
 func (s *subscriber) OnClose() {
-	err := s.conn.Close()
-
-	if err != nil {
-		s.logger.LogError(err)
-	}
+	close(s.ch)
 }

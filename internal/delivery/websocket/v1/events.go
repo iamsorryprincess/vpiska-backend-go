@@ -31,15 +31,19 @@ func (h *Handler) upgradeEventConnection(writer http.ResponseWriter, request *ht
 	}
 
 	ctx.EventID = eventId
-	sub := newSubscriber(h.logger, conn)
+	ch := make(chan []byte)
+	sub := newSubscriber(ch)
 	h.publisher.Subscribe(eventId, sub)
+
+	go readMessages(ctx, conn, sub, h.eventHandler, h.eventCloseHandler)
+	go writeMessages(h.pingPeriod, conn, ch)
+
 	err = h.events.AddUserInfo(request.Context(), service.AddUserInfoInput{
 		EventID: eventId,
 		UserID:  ctx.UserID,
 	})
 
 	if err != nil {
-		h.publisher.Unsubscribe(eventId, sub)
 		closeErr := conn.Close()
 		if closeErr != nil {
 			h.logger.LogError(closeErr)
@@ -52,8 +56,6 @@ func (h *Handler) upgradeEventConnection(writer http.ResponseWriter, request *ht
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
-	go h.readMessages(ctx, conn, sub, h.eventHandler, h.eventCloseHandler)
 }
 
 func (h *Handler) eventHandler(ctx socketContext, body []byte) {

@@ -7,7 +7,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
 )
 
 func (h *Handler) initMediaAPI(router *gin.RouterGroup) {
@@ -28,7 +27,7 @@ func (h *Handler) initMediaAPI(router *gin.RouterGroup) {
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/media [post]
 func (h *Handler) uploadMedia(context *gin.Context) {
-	fileData, header, err := parseFormFile("file", context, h.logger)
+	/*fileData, header, err := parseFormFile("file", context, h.logger)
 
 	if err != nil {
 		return
@@ -46,7 +45,7 @@ func (h *Handler) uploadMedia(context *gin.Context) {
 		return
 	}
 
-	writeResponse(mediaId, context)
+	writeResponse(mediaId, context)*/
 }
 
 // GetMedia godoc
@@ -122,40 +121,40 @@ type fileMetadataResponse struct {
 // @Success      200 {object} apiResponse{result=fileMetadataResponse}
 // @Router       /v1/media/metadata/{id} [get]
 func (h *Handler) getMetadata(context *gin.Context) {
-	mediaId := context.Param("id")
+	/*	mediaId := context.Param("id")
 
-	if mediaId == "" {
-		response := createDomainErrorResponse(errEmptyId)
-		context.JSON(http.StatusOK, response)
-		return
-	}
+		if mediaId == "" {
+			response := createDomainErrorResponse(errEmptyId)
+			context.JSON(http.StatusOK, response)
+			return
+		}
 
-	isMatched, err := regexp.MatchString(idRegexp, mediaId)
+		isMatched, err := regexp.MatchString(idRegexp, mediaId)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	if !isMatched {
-		response := createDomainErrorResponse(errInvalidId)
-		context.JSON(http.StatusOK, response)
-		return
-	}
+		if !isMatched {
+			response := createDomainErrorResponse(errInvalidId)
+			context.JSON(http.StatusOK, response)
+			return
+		}
 
-	metadata, err := h.services.Media.GetMetadata(context.Request.Context(), mediaId)
+		metadata, err := h.services.Media.GetMetadata(context.Request.Context(), mediaId)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	writeResponse(fileMetadataResponse{
-		ID:          metadata.ID,
-		Name:        metadata.Name,
-		Size:        metadata.Size,
-		ContentType: metadata.ContentType,
-	}, context)
+		writeResponse(fileMetadataResponse{
+			ID:          metadata.ID,
+			Name:        metadata.Name,
+			Size:        metadata.Size,
+			ContentType: metadata.ContentType,
+		}, context)*/
 }
 
 // DeleteMedia godoc
@@ -168,32 +167,32 @@ func (h *Handler) getMetadata(context *gin.Context) {
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/media/{id} [delete]
 func (h *Handler) deleteMedia(context *gin.Context) {
-	mediaId := context.Param("id")
+	/*	mediaId := context.Param("id")
 
-	if mediaId == "" {
-		writeErrorResponse(errEmptyId, h.logger, context)
-		return
-	}
+		if mediaId == "" {
+			writeErrorResponse(errEmptyId, h.logger, context)
+			return
+		}
 
-	isMatched, err := regexp.MatchString(idRegexp, mediaId)
+		isMatched, err := regexp.MatchString(idRegexp, mediaId)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	if !isMatched {
-		response := createDomainErrorResponse(errInvalidId)
-		context.JSON(http.StatusOK, response)
-		return
-	}
+		if !isMatched {
+			response := createDomainErrorResponse(errInvalidId)
+			context.JSON(http.StatusOK, response)
+			return
+		}
 
-	err = h.services.Media.Delete(context.Request.Context(), mediaId)
+		err = h.services.Media.Delete(context.Request.Context(), mediaId)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	writeResponse(nil, context)
+		writeResponse(nil, context)*/
 }

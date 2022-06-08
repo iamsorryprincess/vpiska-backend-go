@@ -1,57 +1,71 @@
 package v1
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
 )
 
-var unauthorizedResponse = createDomainErrorResponse(auth.ErrInvalidToken)
+type userID string
 
-func (h *Handler) jwtAuth(context *gin.Context) {
-	headerValue := context.GetHeader("Authorization")
+var userIdKey = userID("UserID")
 
-	if headerValue == "" {
-		context.AbortWithStatusJSON(http.StatusOK, unauthorizedResponse)
-		return
-	}
+var unauthorizedResponse = newErrorResponse(auth.ErrInvalidToken.Error())
 
-	encodedToken := strings.TrimPrefix(headerValue, "Bearer ")
+func (h *Handler) jwtAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		headerValue := request.Header.Get("Authorization")
 
-	if encodedToken == "" {
-		context.AbortWithStatusJSON(http.StatusOK, unauthorizedResponse)
-		return
-	}
-
-	token, err := h.tokenManager.ParseToken(encodedToken)
-
-	if err != nil {
-		if err == auth.ErrInvalidToken {
-			context.AbortWithStatusJSON(http.StatusOK, unauthorizedResponse)
+		if headerValue == "" {
+			h.writeJSONResponse(writer, unauthorizedResponse)
 			return
 		}
 
-		h.logger.LogError(err)
-		context.AbortWithStatusJSON(http.StatusOK, createDomainErrorResponse(errInternal))
-		return
+		encodedToken := strings.TrimPrefix(headerValue, "Bearer ")
+
+		if encodedToken == "" {
+			h.writeJSONResponse(writer, unauthorizedResponse)
+			return
+		}
+
+		token, err := h.tokenManager.ParseToken(encodedToken)
+
+		if err != nil {
+			if err == auth.ErrInvalidToken {
+				h.writeJSONResponse(writer, unauthorizedResponse)
+				return
+			}
+
+			h.logger.LogError(err)
+			h.writeJSONResponse(writer, newErrorResponse(internalError))
+			return
+		}
+
+		validationErrs, err := validateId(token.ID)
+
+		if err != nil {
+			h.logger.LogError(err)
+			h.writeJSONResponse(writer, newErrorResponse(internalError))
+			return
+		}
+
+		if len(validationErrs) > 0 {
+			h.writeJSONResponse(writer, newValidationErrsResponse(validationErrs))
+			return
+		}
+
+		next.ServeHTTP(writer, request.WithContext(context.WithValue(request.Context(), userIdKey, userID(token.ID))))
+	}
+}
+
+func getUserID(request *http.Request) string {
+	value, ok := request.Context().Value(userIdKey).(userID)
+
+	if !ok {
+		return ""
 	}
 
-	validationErrs, err := validateId(token.ID)
-
-	if err != nil {
-		h.logger.LogError(err)
-		context.AbortWithStatusJSON(http.StatusOK, createDomainErrorResponse(errInternal))
-		return
-	}
-
-	if validationErrs != nil {
-		context.AbortWithStatusJSON(http.StatusOK, createValidationErrorResponse(validationErrs))
-		return
-	}
-
-	context.Set("UserID", token.ID)
-	context.Set("Username", token.Name)
-	context.Set("UserImage", token.ImageID)
+	return string(value)
 }

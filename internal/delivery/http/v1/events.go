@@ -2,8 +2,6 @@ package v1
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
 )
 
 const (
@@ -14,15 +12,15 @@ const (
 )
 
 func (h *Handler) initEventsAPI(router *gin.RouterGroup) {
-	events := router.Group("/events")
-	events.POST("/get", h.getEventByID)
-	events.POST("/range", h.getEventsByRange)
-	authenticated := events.Group("/", h.jwtAuth)
-	authenticated.POST("/create", h.createEvent)
-	authenticated.POST("/update", h.updateEvent)
-	authenticated.POST("/close", h.closeEvent)
-	authenticated.POST("/media/add", h.addMediaToEvent)
-	authenticated.POST("/media/remove", h.removeMediaFromEvent)
+	/*	events := router.Group("/events")
+		events.POST("/get", h.getEventByID)
+		events.POST("/range", h.getEventsByRange)
+		authenticated := events.Group("/", h.jwtAuth)
+		authenticated.POST("/create", h.createEvent)
+		authenticated.POST("/update", h.updateEvent)
+		authenticated.POST("/close", h.closeEvent)
+		authenticated.POST("/media/add", h.addMediaToEvent)
+		authenticated.POST("/media/remove", h.removeMediaFromEvent)*/
 }
 
 type coordinates struct {
@@ -70,7 +68,7 @@ type createEventRequest struct {
 // @Success      200 {object} apiResponse{result=eventResponse}
 // @Router       /v1/events/create [post]
 func (h *Handler) createEvent(context *gin.Context) {
-	request := createEventRequest{}
+	/*request := createEventRequest{}
 	err := context.BindJSON(&request)
 
 	if err != nil {
@@ -100,7 +98,7 @@ func (h *Handler) createEvent(context *gin.Context) {
 		return
 	}
 
-	writeResponse(result, context)
+	writeResponse(result, context)*/
 }
 
 type eventIDRequest struct {
@@ -117,34 +115,34 @@ type eventIDRequest struct {
 // @Success      200 {object} apiResponse{result=eventResponse}
 // @Router       /v1/events/get [post]
 func (h *Handler) getEventByID(context *gin.Context) {
-	request := eventIDRequest{}
-	err := context.BindJSON(&request)
+	/*	request := eventIDRequest{}
+		err := context.BindJSON(&request)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	validationErr, err := validateId(request.EventID)
+		validationErr, err := validateId(request.EventID)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	if len(validationErr) > 0 {
-		writeValidationErrResponse(validationErr, context)
-		return
-	}
+		if len(validationErr) > 0 {
+			writeValidationErrResponse(validationErr, context)
+			return
+		}
 
-	event, err := h.services.Events.GetByID(context.Request.Context(), request.EventID)
+		event, err := h.services.Events.GetByID(context.Request.Context(), request.EventID)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	writeResponse(event, context)
+		writeResponse(event, context)*/
 }
 
 type getByRangeRequest struct {
@@ -170,36 +168,36 @@ type eventRangeData struct {
 // @Success      200 {object} apiResponse{result=eventRangeData}
 // @Router       /v1/events/range [post]
 func (h *Handler) getEventsByRange(context *gin.Context) {
-	request := getByRangeRequest{}
-	err := context.BindJSON(&request)
+	/*	request := getByRangeRequest{}
+		err := context.BindJSON(&request)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	validationErrs := validateGetByRangeRequest(request)
+		validationErrs := validateGetByRangeRequest(request)
 
-	if len(validationErrs) > 0 {
-		writeValidationErrResponse(validationErrs, context)
-		return
-	}
+		if len(validationErrs) > 0 {
+			writeValidationErrResponse(validationErrs, context)
+			return
+		}
 
-	result, err := h.services.Events.GetByRange(context.Request.Context(), service.GetByRangeInput{
-		HorizontalRange: *request.HorizontalRange,
-		VerticalRange:   *request.VerticalRange,
-		Coordinates: domain.Coordinates{
-			X: *request.Coordinates.X,
-			Y: *request.Coordinates.Y,
-		},
-	})
+		result, err := h.services.Events.GetByRange(context.Request.Context(), service.GetByRangeInput{
+			HorizontalRange: *request.HorizontalRange,
+			VerticalRange:   *request.VerticalRange,
+			Coordinates: domain.Coordinates{
+				X: *request.Coordinates.X,
+				Y: *request.Coordinates.Y,
+			},
+		})
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	writeResponse(result, context)
+		writeResponse(result, context)*/
 }
 
 type updateEventRequest struct {
@@ -219,42 +217,42 @@ type updateEventRequest struct {
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/events/update [post]
 func (h *Handler) updateEvent(context *gin.Context) {
-	request := updateEventRequest{}
-	err := context.BindJSON(&request)
+	/*	request := updateEventRequest{}
+		err := context.BindJSON(&request)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	validationErrs, err := validateUpdateEventRequest(request)
+		validationErrs, err := validateUpdateEventRequest(request)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	if len(validationErrs) > 0 {
-		writeValidationErrResponse(validationErrs, context)
-		return
-	}
+		if len(validationErrs) > 0 {
+			writeValidationErrResponse(validationErrs, context)
+			return
+		}
 
-	err = h.services.Events.Update(context.Request.Context(), service.UpdateEventInput{
-		UserID:  context.GetString("UserID"),
-		EventID: request.EventID,
-		Address: request.Address,
-		Coordinates: domain.Coordinates{
-			X: *request.Coordinates.X,
-			Y: *request.Coordinates.Y,
-		},
-	})
+		err = h.services.Events.Update(context.Request.Context(), service.UpdateEventInput{
+			UserID:  context.GetString("UserID"),
+			EventID: request.EventID,
+			Address: request.Address,
+			Coordinates: domain.Coordinates{
+				X: *request.Coordinates.X,
+				Y: *request.Coordinates.Y,
+			},
+		})
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	writeResponse(nil, context)
+		writeResponse(nil, context)*/
 }
 
 // CloseEvent godoc
@@ -268,34 +266,34 @@ func (h *Handler) updateEvent(context *gin.Context) {
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/events/close [post]
 func (h *Handler) closeEvent(context *gin.Context) {
-	request := eventIDRequest{}
-	err := context.BindJSON(&request)
+	/*	request := eventIDRequest{}
+		err := context.BindJSON(&request)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	validationErr, err := validateId(request.EventID)
+		validationErr, err := validateId(request.EventID)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	if len(validationErr) > 0 {
-		writeValidationErrResponse(validationErr, context)
-		return
-	}
+		if len(validationErr) > 0 {
+			writeValidationErrResponse(validationErr, context)
+			return
+		}
 
-	err = h.services.Events.Close(context.Request.Context(), request.EventID, context.GetString("UserID"))
+		err = h.services.Events.Close(context.Request.Context(), request.EventID, context.GetString("UserID"))
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	writeResponse(nil, context)
+		writeResponse(nil, context)*/
 }
 
 // AddMediaToEvent godoc
@@ -310,41 +308,41 @@ func (h *Handler) closeEvent(context *gin.Context) {
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/events/media/add [post]
 func (h *Handler) addMediaToEvent(context *gin.Context) {
-	eventId := context.PostForm("eventId")
-	validationErrs, err := validateId(eventId)
+	/*	eventId := context.PostForm("eventId")
+		validationErrs, err := validateId(eventId)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	if len(validationErrs) > 0 {
-		writeValidationErrResponse(validationErrs, context)
-		return
-	}
+		if len(validationErrs) > 0 {
+			writeValidationErrResponse(validationErrs, context)
+			return
+		}
 
-	fileData, header, err := parseFormFile("media", context, h.logger)
+		fileData, header, err := parseFormFile("media", context, h.logger)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	err = h.services.Events.AddMedia(context.Request.Context(), &service.AddMediaInput{
-		EventID:     eventId,
-		UserID:      context.GetString("UserID"),
-		FileName:    header.Filename,
-		ContentType: header.Header.Get("Content-Type"),
-		FileSize:    header.Size,
-		FileData:    fileData,
-	})
+		err = h.services.Events.AddMedia(context.Request.Context(), &service.AddMediaInput{
+			EventID:     eventId,
+			UserID:      context.GetString("UserID"),
+			FileName:    header.Filename,
+			ContentType: header.Header.Get("Content-Type"),
+			FileSize:    header.Size,
+			FileData:    fileData,
+		})
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	writeResponse(nil, context)
+		writeResponse(nil, context)*/
 }
 
 type removeMediaRequest struct {
@@ -363,50 +361,50 @@ type removeMediaRequest struct {
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/events/media/remove [post]
 func (h *Handler) removeMediaFromEvent(context *gin.Context) {
-	request := removeMediaRequest{}
-	err := context.BindJSON(&request)
+	/*	request := removeMediaRequest{}
+		err := context.BindJSON(&request)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	validationErr, err := validateId(request.EventID)
+		validationErr, err := validateId(request.EventID)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	if len(validationErr) > 0 {
-		writeValidationErrResponse(validationErr, context)
-		return
-	}
+		if len(validationErr) > 0 {
+			writeValidationErrResponse(validationErr, context)
+			return
+		}
 
-	validationErr, err = validateId(request.MediaID)
+		validationErr, err = validateId(request.MediaID)
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	if len(validationErr) > 0 {
-		writeValidationErrResponse(validationErr, context)
-		return
-	}
+		if len(validationErr) > 0 {
+			writeValidationErrResponse(validationErr, context)
+			return
+		}
 
-	err = h.services.Events.RemoveMedia(context.Request.Context(), service.RemoveMediaInput{
-		EventID: request.EventID,
-		MediaID: request.MediaID,
-		UserID:  context.GetString("UserID"),
-	})
+		err = h.services.Events.RemoveMedia(context.Request.Context(), service.RemoveMediaInput{
+			EventID: request.EventID,
+			MediaID: request.MediaID,
+			UserID:  context.GetString("UserID"),
+		})
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
-		return
-	}
+		if err != nil {
+			writeErrorResponse(err, h.logger, context)
+			return
+		}
 
-	writeResponse(nil, context)
+		writeResponse(nil, context)*/
 }
 
 func validateCreateEventRequest(request createEventRequest) []string {

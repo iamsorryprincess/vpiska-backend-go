@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -12,6 +13,65 @@ type userID string
 
 var userIdKey = userID("UserID")
 var unauthorizedResponse = newErrorResponse(auth.ErrInvalidToken.Error())
+
+func (h *Handler) GET(next http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != http.MethodGet {
+			h.writeJSONResponse(writer, newErrorResponse("invalid method"))
+			return
+		}
+		next.ServeHTTP(writer, request)
+	}
+}
+
+func (h *Handler) POST(next http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != http.MethodPost {
+			h.writeJSONResponse(writer, newErrorResponse("invalid method"))
+			return
+		}
+		next.ServeHTTP(writer, request)
+	}
+}
+
+func (h *Handler) DELETE(next http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != http.MethodDelete {
+			h.writeJSONResponse(writer, newErrorResponse("invalid method"))
+			return
+		}
+		next.ServeHTTP(writer, request)
+	}
+}
+
+func (h *Handler) Recover(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				var err error
+
+				switch t := recovered.(type) {
+				case error:
+					err = t
+					break
+				case string:
+					err = errors.New(t)
+					break
+				default:
+					err = errors.New("unknown error")
+					break
+				}
+
+				if err != nil {
+					h.logger.LogError(err)
+				}
+
+				h.writeJSONResponse(writer, newErrorResponse(internalError))
+			}
+		}()
+		next.ServeHTTP(writer, request)
+	})
+}
 
 func (h *Handler) jwtAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
@@ -56,36 +116,6 @@ func (h *Handler) jwtAuth(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		next.ServeHTTP(writer, request.WithContext(context.WithValue(request.Context(), userIdKey, userID(token.ID))))
-	}
-}
-
-func (h *Handler) GET(next http.HandlerFunc) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method != http.MethodGet {
-			h.writeJSONResponse(writer, newErrorResponse("invalid method"))
-			return
-		}
-		next.ServeHTTP(writer, request)
-	}
-}
-
-func (h *Handler) POST(next http.HandlerFunc) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method != http.MethodPost {
-			h.writeJSONResponse(writer, newErrorResponse("invalid method"))
-			return
-		}
-		next.ServeHTTP(writer, request)
-	}
-}
-
-func (h *Handler) DELETE(next http.HandlerFunc) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method != http.MethodDelete {
-			h.writeJSONResponse(writer, newErrorResponse("invalid method"))
-			return
-		}
-		next.ServeHTTP(writer, request)
 	}
 }
 

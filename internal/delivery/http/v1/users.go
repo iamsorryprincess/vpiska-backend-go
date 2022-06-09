@@ -22,11 +22,11 @@ const (
 )
 
 func (h *Handler) initUsersAPI(mux *http.ServeMux) {
-	mux.HandleFunc("/api/v1/users/create", h.createUser)
-	mux.HandleFunc("/api/v1/users/login", h.loginUser)
-	mux.HandleFunc("/api/v1/users/password/change", h.jwtAuth(h.changePassword))
-	mux.HandleFunc("/api/v1/users/update", h.jwtAuth(h.updateUser))
-	mux.HandleFunc("/api/v1/users/media/set", h.jwtAuth(h.setUserImage))
+	mux.HandleFunc("/api/v1/users/create", h.POST(h.createUser))
+	mux.HandleFunc("/api/v1/users/login", h.POST(h.loginUser))
+	mux.HandleFunc("/api/v1/users/password/change", h.POST(h.jwtAuth(h.changePassword)))
+	mux.HandleFunc("/api/v1/users/update", h.POST(h.jwtAuth(h.updateUser)))
+	mux.HandleFunc("/api/v1/users/media/set", h.POST(h.jwtAuth(h.setUserImage)))
 }
 
 type loginResponse struct {
@@ -282,17 +282,9 @@ type setImageResponse struct {
 // @Success      200 {object} apiResponse{result=setImageResponse}
 // @Router       /v1/users/media/set [post]
 func (h *Handler) setUserImage(writer http.ResponseWriter, request *http.Request) {
-	file, header, isOk := h.parseForm(writer, request, "image")
+	data, header, isOk := h.parseFormFile(writer, request, "image")
 
 	if !isOk {
-		return
-	}
-
-	data := make([]byte, header.Size)
-
-	if _, err := file.Read(data); err != nil {
-		h.logger.LogError(err)
-		h.writeJSONResponse(writer, newErrorResponse(internalError))
 		return
 	}
 

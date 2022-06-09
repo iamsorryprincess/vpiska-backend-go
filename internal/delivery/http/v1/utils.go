@@ -97,7 +97,7 @@ func (h *Handler) writeError(writer http.ResponseWriter, err error) {
 	h.writeJSONResponse(writer, newErrorResponse(err.Error()))
 }
 
-func (h *Handler) parseForm(writer http.ResponseWriter, request *http.Request, filename string) (multipart.File, *multipart.FileHeader, bool) {
+func (h *Handler) parseFormFile(writer http.ResponseWriter, request *http.Request, filename string) ([]byte, *multipart.FileHeader, bool) {
 	if !strings.Contains(request.Header.Get("Content-Type"), contentTypeFORM) {
 		h.writeJSONResponse(writer, newErrorResponse("invalid Content-Type"))
 		return nil, nil, false
@@ -117,7 +117,21 @@ func (h *Handler) parseForm(writer http.ResponseWriter, request *http.Request, f
 		return nil, nil, false
 	}
 
-	return file, header, true
+	data := make([]byte, header.Size)
+
+	if _, err = file.Read(data); err != nil {
+		h.logger.LogError(err)
+		h.writeJSONResponse(writer, newErrorResponse(internalError))
+		return nil, nil, false
+	}
+
+	if err = file.Close(); err != nil {
+		h.logger.LogError(err)
+		h.writeJSONResponse(writer, newErrorResponse(internalError))
+		return nil, nil, false
+	}
+
+	return data, header, true
 }
 
 func validateId(id string) ([]string, error) {

@@ -23,5 +23,7 @@ func NewHandler(logger logger.Logger, services *service.Services, tokenManager a
 }
 
 func (h *Handler) InitAPI(mux *http.ServeMux) {
+	h.initMediaAPI(mux)
 	h.initUsersAPI(mux)
+	h.initEventsAPI(mux)
 }

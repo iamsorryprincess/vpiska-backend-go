@@ -1,11 +1,5 @@
 package v1
 
-import (
-	"errors"
-)
-
-var errInternal = errors.New("InternalError")
-
 type errorResponse struct {
 	ErrorCode string `json:"errorCode"`
 }

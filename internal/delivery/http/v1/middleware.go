@@ -11,7 +11,6 @@ import (
 type userID string
 
 var userIdKey = userID("UserID")
-
 var unauthorizedResponse = newErrorResponse(auth.ErrInvalidToken.Error())
 
 func (h *Handler) jwtAuth(next http.HandlerFunc) http.HandlerFunc {
@@ -57,6 +56,36 @@ func (h *Handler) jwtAuth(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		next.ServeHTTP(writer, request.WithContext(context.WithValue(request.Context(), userIdKey, userID(token.ID))))
+	}
+}
+
+func (h *Handler) GET(next http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != http.MethodGet {
+			h.writeJSONResponse(writer, newErrorResponse("invalid method"))
+			return
+		}
+		next.ServeHTTP(writer, request)
+	}
+}
+
+func (h *Handler) POST(next http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != http.MethodPost {
+			h.writeJSONResponse(writer, newErrorResponse("invalid method"))
+			return
+		}
+		next.ServeHTTP(writer, request)
+	}
+}
+
+func (h *Handler) DELETE(next http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != http.MethodDelete {
+			h.writeJSONResponse(writer, newErrorResponse("invalid method"))
+			return
+		}
+		next.ServeHTTP(writer, request)
 	}
 }
 

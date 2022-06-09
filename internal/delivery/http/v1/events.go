@@ -1,7 +1,10 @@
 package v1
 
 import (
-	"github.com/gin-gonic/gin"
+	"net/http"
+
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
 )
 
 const (
@@ -11,16 +14,14 @@ const (
 	emptyVerticalRangeError   = "VerticalRangeIsEmpty"
 )
 
-func (h *Handler) initEventsAPI(router *gin.RouterGroup) {
-	/*	events := router.Group("/events")
-		events.POST("/get", h.getEventByID)
-		events.POST("/range", h.getEventsByRange)
-		authenticated := events.Group("/", h.jwtAuth)
-		authenticated.POST("/create", h.createEvent)
-		authenticated.POST("/update", h.updateEvent)
-		authenticated.POST("/close", h.closeEvent)
-		authenticated.POST("/media/add", h.addMediaToEvent)
-		authenticated.POST("/media/remove", h.removeMediaFromEvent)*/
+func (h *Handler) initEventsAPI(mux *http.ServeMux) {
+	mux.HandleFunc("/api/v1/events/get", h.POST(h.getEventByID))
+	mux.HandleFunc("/api/v1/events/range", h.POST(h.getEventsByRange))
+	mux.HandleFunc("/api/v1/events/create", h.jwtAuth(h.POST(h.createEvent)))
+	mux.HandleFunc("/api/v1/events/update", h.jwtAuth(h.POST(h.updateEvent)))
+	mux.HandleFunc("/api/v1/events/close", h.jwtAuth(h.POST(h.closeEvent)))
+	mux.HandleFunc("/api/v1/events/media/add", h.jwtAuth(h.POST(h.addMediaToEvent)))
+	mux.HandleFunc("/api/v1/events/media/remove", h.jwtAuth(h.POST(h.removeMediaFromEvent)))
 }
 
 type coordinates struct {
@@ -57,6 +58,26 @@ type createEventRequest struct {
 	Coordinates *coordinates `json:"coordinates"`
 }
 
+func (r createEventRequest) Validate() ([]string, error) {
+	var validationErrors []string
+
+	if r.Name == "" {
+		validationErrors = append(validationErrors, emptyNameError)
+	}
+
+	if r.Address == "" {
+		validationErrors = append(validationErrors, emptyAddressError)
+	}
+
+	if r.Coordinates == nil {
+		validationErrors = append(validationErrors, emptyCoordinatesError)
+	} else if r.Coordinates.X == nil || r.Coordinates.Y == nil {
+		validationErrors = append(validationErrors, emptyCoordinatesError)
+	}
+
+	return validationErrors, nil
+}
+
 // CreateEvent godoc
 // @Summary      Создать эвент
 // @Security     UserAuth
@@ -67,42 +88,37 @@ type createEventRequest struct {
 // @param        request body createEventRequest true "body"
 // @Success      200 {object} apiResponse{result=eventResponse}
 // @Router       /v1/events/create [post]
-func (h *Handler) createEvent(context *gin.Context) {
-	/*request := createEventRequest{}
-	err := context.BindJSON(&request)
+func (h *Handler) createEvent(writer http.ResponseWriter, request *http.Request) {
+	reqBody := createEventRequest{}
 
-	if err != nil {
-		writeErrorResponse(err, h.logger, context)
+	if isOk := h.bindValidatedRequestJSON(writer, request, &reqBody); !isOk {
 		return
 	}
 
-	validationErrors := validateCreateEventRequest(request)
-
-	if len(validationErrors) > 0 {
-		writeValidationErrResponse(validationErrors, context)
-		return
-	}
-
-	result, err := h.services.Events.Create(context.Request.Context(), service.CreateEventInput{
-		OwnerID: context.GetString("UserID"),
-		Name:    request.Name,
-		Address: request.Address,
+	result, err := h.services.Events.Create(request.Context(), service.CreateEventInput{
+		OwnerID: getUserID(request),
+		Name:    reqBody.Name,
+		Address: reqBody.Address,
 		Coordinates: domain.Coordinates{
-			X: *request.Coordinates.X,
-			Y: *request.Coordinates.Y,
+			X: *reqBody.Coordinates.X,
+			Y: *reqBody.Coordinates.Y,
 		},
 	})
 
 	if err != nil {
-		writeErrorResponse(err, h.logger, context)
+		h.writeError(writer, err)
 		return
 	}
 
-	writeResponse(result, context)*/
+	h.writeJSONResponse(writer, newSuccessResponse(result))
 }
 
 type eventIDRequest struct {
 	EventID string `json:"eventId"`
+}
+
+func (r eventIDRequest) Validate() ([]string, error) {
+	return validateId(r.EventID)
 }
 
 // GetEvent godoc
@@ -114,35 +130,28 @@ type eventIDRequest struct {
 // @param        request body eventIDRequest true "body"
 // @Success      200 {object} apiResponse{result=eventResponse}
 // @Router       /v1/events/get [post]
-func (h *Handler) getEventByID(context *gin.Context) {
-	/*	request := eventIDRequest{}
-		err := context.BindJSON(&request)
+func (h *Handler) getEventByID(writer http.ResponseWriter, request *http.Request) {
+	reqBody := eventIDRequest{}
 
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
+	if isOk := h.bindValidatedRequestJSON(writer, request, &reqBody); !isOk {
+		return
+	}
 
-		validationErr, err := validateId(request.EventID)
+	event, err := h.services.Events.GetByID(request.Context(), reqBody.EventID)
 
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
+	if err != nil {
+		h.writeError(writer, err)
+		return
+	}
 
-		if len(validationErr) > 0 {
-			writeValidationErrResponse(validationErr, context)
-			return
-		}
+	h.writeJSONResponse(writer, newSuccessResponse(event))
+}
 
-		event, err := h.services.Events.GetByID(context.Request.Context(), request.EventID)
-
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
-
-		writeResponse(event, context)*/
+type eventRangeData struct {
+	ID          string      `json:"id"`
+	Name        string      `json:"name"`
+	UsersCount  int         `json:"usersCount"`
+	Coordinates coordinates `json:"coordinates"`
 }
 
 type getByRangeRequest struct {
@@ -151,11 +160,24 @@ type getByRangeRequest struct {
 	Coordinates     *coordinates `json:"coordinates"`
 }
 
-type eventRangeData struct {
-	ID          string      `json:"id"`
-	Name        string      `json:"name"`
-	UsersCount  int         `json:"usersCount"`
-	Coordinates coordinates `json:"coordinates"`
+func (r getByRangeRequest) Validate() ([]string, error) {
+	var validationErrors []string
+
+	if r.HorizontalRange == nil {
+		validationErrors = append(validationErrors, emptyHorizontalRangeError)
+	}
+
+	if r.VerticalRange == nil {
+		validationErrors = append(validationErrors, emptyVerticalRangeError)
+	}
+
+	if r.Coordinates == nil {
+		validationErrors = append(validationErrors, emptyCoordinatesError)
+	} else if r.Coordinates.X == nil || r.Coordinates.Y == nil {
+		validationErrors = append(validationErrors, emptyCoordinatesError)
+	}
+
+	return validationErrors, nil
 }
 
 // GetEventsByRange godoc
@@ -167,43 +189,54 @@ type eventRangeData struct {
 // @param        request body getByRangeRequest true "body"
 // @Success      200 {object} apiResponse{result=eventRangeData}
 // @Router       /v1/events/range [post]
-func (h *Handler) getEventsByRange(context *gin.Context) {
-	/*	request := getByRangeRequest{}
-		err := context.BindJSON(&request)
+func (h *Handler) getEventsByRange(writer http.ResponseWriter, request *http.Request) {
+	reqBody := getByRangeRequest{}
 
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
+	if isOk := h.bindValidatedRequestJSON(writer, request, &reqBody); !isOk {
+		return
+	}
 
-		validationErrs := validateGetByRangeRequest(request)
+	result, err := h.services.Events.GetByRange(request.Context(), service.GetByRangeInput{
+		HorizontalRange: *reqBody.HorizontalRange,
+		VerticalRange:   *reqBody.VerticalRange,
+		Coordinates: domain.Coordinates{
+			X: *reqBody.Coordinates.X,
+			Y: *reqBody.Coordinates.Y,
+		},
+	})
 
-		if len(validationErrs) > 0 {
-			writeValidationErrResponse(validationErrs, context)
-			return
-		}
+	if err != nil {
+		h.writeError(writer, err)
+		return
+	}
 
-		result, err := h.services.Events.GetByRange(context.Request.Context(), service.GetByRangeInput{
-			HorizontalRange: *request.HorizontalRange,
-			VerticalRange:   *request.VerticalRange,
-			Coordinates: domain.Coordinates{
-				X: *request.Coordinates.X,
-				Y: *request.Coordinates.Y,
-			},
-		})
-
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
-
-		writeResponse(result, context)*/
+	h.writeJSONResponse(writer, newSuccessResponse(result))
 }
 
 type updateEventRequest struct {
 	EventID     string       `json:"eventId"`
 	Address     string       `json:"address"`
 	Coordinates *coordinates `json:"coordinates"`
+}
+
+func (r updateEventRequest) Validate() ([]string, error) {
+	validationErrors, err := validateId(r.EventID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if r.Address == "" {
+		validationErrors = append(validationErrors, emptyAddressError)
+	}
+
+	if r.Coordinates == nil {
+		validationErrors = append(validationErrors, emptyCoordinatesError)
+	} else if r.Coordinates.X == nil || r.Coordinates.Y == nil {
+		validationErrors = append(validationErrors, emptyCoordinatesError)
+	}
+
+	return validationErrors, nil
 }
 
 // UpdateEvent godoc
@@ -216,43 +249,27 @@ type updateEventRequest struct {
 // @param        request body updateEventRequest true "body"
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/events/update [post]
-func (h *Handler) updateEvent(context *gin.Context) {
-	/*	request := updateEventRequest{}
-		err := context.BindJSON(&request)
+func (h *Handler) updateEvent(writer http.ResponseWriter, request *http.Request) {
+	reqBody := updateEventRequest{}
 
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
+	if isOk := h.bindValidatedRequestJSON(writer, request, &reqBody); !isOk {
+		return
+	}
 
-		validationErrs, err := validateUpdateEventRequest(request)
+	if err := h.services.Events.Update(request.Context(), service.UpdateEventInput{
+		UserID:  getUserID(request),
+		EventID: reqBody.EventID,
+		Address: reqBody.Address,
+		Coordinates: domain.Coordinates{
+			X: *reqBody.Coordinates.X,
+			Y: *reqBody.Coordinates.Y,
+		},
+	}); err != nil {
+		h.writeError(writer, err)
+		return
+	}
 
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
-
-		if len(validationErrs) > 0 {
-			writeValidationErrResponse(validationErrs, context)
-			return
-		}
-
-		err = h.services.Events.Update(context.Request.Context(), service.UpdateEventInput{
-			UserID:  context.GetString("UserID"),
-			EventID: request.EventID,
-			Address: request.Address,
-			Coordinates: domain.Coordinates{
-				X: *request.Coordinates.X,
-				Y: *request.Coordinates.Y,
-			},
-		})
-
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
-
-		writeResponse(nil, context)*/
+	h.writeJSONResponse(writer, newSuccessResponse(nil))
 }
 
 // CloseEvent godoc
@@ -265,35 +282,19 @@ func (h *Handler) updateEvent(context *gin.Context) {
 // @param        request body eventIDRequest true "body"
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/events/close [post]
-func (h *Handler) closeEvent(context *gin.Context) {
-	/*	request := eventIDRequest{}
-		err := context.BindJSON(&request)
+func (h *Handler) closeEvent(writer http.ResponseWriter, request *http.Request) {
+	reqBody := eventIDRequest{}
 
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
+	if isOk := h.bindValidatedRequestJSON(writer, request, &reqBody); !isOk {
+		return
+	}
 
-		validationErr, err := validateId(request.EventID)
+	if err := h.services.Events.Close(request.Context(), reqBody.EventID, getUserID(request)); err != nil {
+		h.writeError(writer, err)
+		return
+	}
 
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
-
-		if len(validationErr) > 0 {
-			writeValidationErrResponse(validationErr, context)
-			return
-		}
-
-		err = h.services.Events.Close(context.Request.Context(), request.EventID, context.GetString("UserID"))
-
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
-
-		writeResponse(nil, context)*/
+	h.writeJSONResponse(writer, newSuccessResponse(nil))
 }
 
 // AddMediaToEvent godoc
@@ -307,47 +308,56 @@ func (h *Handler) closeEvent(context *gin.Context) {
 // @param        media formData file true "file"
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/events/media/add [post]
-func (h *Handler) addMediaToEvent(context *gin.Context) {
-	/*	eventId := context.PostForm("eventId")
-		validationErrs, err := validateId(eventId)
+func (h *Handler) addMediaToEvent(writer http.ResponseWriter, request *http.Request) {
+	data, header, isOk := h.parseFormFile(writer, request, "media")
 
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
+	if !isOk {
+		return
+	}
 
-		if len(validationErrs) > 0 {
-			writeValidationErrResponse(validationErrs, context)
-			return
-		}
+	eventId := request.PostFormValue("eventId")
+	validationErrs, err := validateId(eventId)
 
-		fileData, header, err := parseFormFile("media", context, h.logger)
+	if err != nil {
+		h.logger.LogError(err)
+		h.writeJSONResponse(writer, newErrorResponse(internalError))
+		return
+	}
 
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
+	if len(validationErrs) > 0 {
+		h.writeJSONResponse(writer, newValidationErrsResponse(validationErrs))
+		return
+	}
 
-		err = h.services.Events.AddMedia(context.Request.Context(), &service.AddMediaInput{
-			EventID:     eventId,
-			UserID:      context.GetString("UserID"),
-			FileName:    header.Filename,
-			ContentType: header.Header.Get("Content-Type"),
-			FileSize:    header.Size,
-			FileData:    fileData,
-		})
+	if err = h.services.Events.AddMedia(request.Context(), &service.AddMediaInput{
+		EventID:     eventId,
+		UserID:      getUserID(request),
+		FileName:    header.Filename,
+		ContentType: header.Header.Get("Content-Type"),
+		FileSize:    header.Size,
+		FileData:    data,
+	}); err != nil {
+		h.writeError(writer, err)
+		return
+	}
 
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
-
-		writeResponse(nil, context)*/
+	h.writeJSONResponse(writer, newSuccessResponse(nil))
 }
 
 type removeMediaRequest struct {
 	EventID string `json:"eventId"`
 	MediaID string `json:"mediaId"`
+}
+
+func (r removeMediaRequest) Validate() ([]string, error) {
+	validationErrs, err := validateId(r.EventID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	validationErrs, err = validateId(r.MediaID)
+	return validationErrs, err
 }
 
 // RemoveMediaFromEvent godoc
@@ -360,109 +370,21 @@ type removeMediaRequest struct {
 // @param        request body removeMediaRequest true "body"
 // @Success      200 {object} apiResponse{result=string}
 // @Router       /v1/events/media/remove [post]
-func (h *Handler) removeMediaFromEvent(context *gin.Context) {
-	/*	request := removeMediaRequest{}
-		err := context.BindJSON(&request)
+func (h *Handler) removeMediaFromEvent(writer http.ResponseWriter, request *http.Request) {
+	reqBody := removeMediaRequest{}
 
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
-
-		validationErr, err := validateId(request.EventID)
-
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
-
-		if len(validationErr) > 0 {
-			writeValidationErrResponse(validationErr, context)
-			return
-		}
-
-		validationErr, err = validateId(request.MediaID)
-
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
-
-		if len(validationErr) > 0 {
-			writeValidationErrResponse(validationErr, context)
-			return
-		}
-
-		err = h.services.Events.RemoveMedia(context.Request.Context(), service.RemoveMediaInput{
-			EventID: request.EventID,
-			MediaID: request.MediaID,
-			UserID:  context.GetString("UserID"),
-		})
-
-		if err != nil {
-			writeErrorResponse(err, h.logger, context)
-			return
-		}
-
-		writeResponse(nil, context)*/
-}
-
-func validateCreateEventRequest(request createEventRequest) []string {
-	var validationErrors []string
-
-	if request.Name == "" {
-		validationErrors = append(validationErrors, emptyNameError)
+	if isOk := h.bindValidatedRequestJSON(writer, request, &reqBody); !isOk {
+		return
 	}
 
-	if request.Address == "" {
-		validationErrors = append(validationErrors, emptyAddressError)
+	if err := h.services.Events.RemoveMedia(request.Context(), service.RemoveMediaInput{
+		EventID: reqBody.EventID,
+		MediaID: reqBody.MediaID,
+		UserID:  getUserID(request),
+	}); err != nil {
+		h.writeError(writer, err)
+		return
 	}
 
-	if request.Coordinates == nil {
-		validationErrors = append(validationErrors, emptyCoordinatesError)
-	} else if request.Coordinates.X == nil || request.Coordinates.Y == nil {
-		validationErrors = append(validationErrors, emptyCoordinatesError)
-	}
-
-	return validationErrors
-}
-
-func validateGetByRangeRequest(request getByRangeRequest) []string {
-	var validationErrors []string
-
-	if request.HorizontalRange == nil {
-		validationErrors = append(validationErrors, emptyHorizontalRangeError)
-	}
-
-	if request.VerticalRange == nil {
-		validationErrors = append(validationErrors, emptyVerticalRangeError)
-	}
-
-	if request.Coordinates == nil {
-		validationErrors = append(validationErrors, emptyCoordinatesError)
-	} else if request.Coordinates.X == nil || request.Coordinates.Y == nil {
-		validationErrors = append(validationErrors, emptyCoordinatesError)
-	}
-
-	return validationErrors
-}
-
-func validateUpdateEventRequest(request updateEventRequest) ([]string, error) {
-	validationErrors, err := validateId(request.EventID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if request.Address == "" {
-		validationErrors = append(validationErrors, emptyAddressError)
-	}
-
-	if request.Coordinates == nil {
-		validationErrors = append(validationErrors, emptyCoordinatesError)
-	} else if request.Coordinates.X == nil || request.Coordinates.Y == nil {
-		validationErrors = append(validationErrors, emptyCoordinatesError)
-	}
-
-	return validationErrors, nil
+	h.writeJSONResponse(writer, newSuccessResponse(nil))
 }

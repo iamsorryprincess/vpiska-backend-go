@@ -2,7 +2,6 @@ package v1
 
 import (
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
@@ -33,17 +32,5 @@ func NewHandler(pingPeriod time.Duration,
 }
 
 func (h *Handler) InitRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method != http.MethodGet {
-			writer.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-
-		if strings.HasSuffix(request.URL.Path, "/event") {
-			h.upgradeEventConnection(writer, request)
-			return
-		}
-
-		writer.WriteHeader(http.StatusNotFound)
-	})
+	mux.HandleFunc("/api/v1/websockets/event", h.upgradeEventConnection)
 }

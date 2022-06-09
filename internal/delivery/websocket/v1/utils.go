@@ -1,10 +1,10 @@
 package v1
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -14,6 +14,13 @@ import (
 
 const idRegexp = `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`
 
+type userData struct {
+	EventID     string
+	UserID      string
+	UserName    string
+	UserImageID string
+}
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -22,21 +29,25 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func (h *Handler) upgradeConnection(writer http.ResponseWriter, request *http.Request) (socketContext, *websocket.Conn, error) {
+func (h *Handler) upgradeConnection(writer http.ResponseWriter, request *http.Request) (userData, *websocket.Conn, error) {
+	if request.Method != http.MethodGet {
+		writer.WriteHeader(http.StatusMethodNotAllowed)
+		return userData{}, nil, errors.New("method not allowed")
+	}
+
 	conn, err := upgrader.Upgrade(writer, request, nil)
 
 	if err != nil {
 		h.logger.LogError(err)
 		writer.WriteHeader(http.StatusInternalServerError)
-		return socketContext{}, nil, err
+		return userData{}, nil, err
 	}
 
-	params := strings.Split(request.URL.RawQuery, "&")
-	paramToken := getQueryValue("accessToken", params)
+	paramToken := request.URL.Query().Get("accessToken")
 
 	if paramToken == "" {
 		writer.WriteHeader(http.StatusUnauthorized)
-		return socketContext{}, nil, errors.New("empty accessToken")
+		return userData{}, nil, errors.New("empty accessToken")
 	}
 
 	token, err := h.tokenManager.ParseToken(paramToken)
@@ -44,12 +55,12 @@ func (h *Handler) upgradeConnection(writer http.ResponseWriter, request *http.Re
 	if err != nil {
 		if err == auth.ErrInvalidToken {
 			writer.WriteHeader(http.StatusUnauthorized)
-			return socketContext{}, nil, err
+			return userData{}, nil, err
 		}
 
 		h.logger.LogError(err)
 		writer.WriteHeader(http.StatusInternalServerError)
-		return socketContext{}, nil, err
+		return userData{}, nil, err
 	}
 
 	isValid, err := validateId(token.ID)
@@ -57,30 +68,34 @@ func (h *Handler) upgradeConnection(writer http.ResponseWriter, request *http.Re
 	if err != nil {
 		h.logger.LogError(err)
 		writer.WriteHeader(http.StatusInternalServerError)
-		return socketContext{}, nil, err
+		return userData{}, nil, err
 	}
 
 	if !isValid {
 		writer.WriteHeader(http.StatusBadRequest)
-		return socketContext{}, nil, errors.New("invalid id")
+		return userData{}, nil, errors.New("invalid id")
 	}
 
-	ctx := socketContext{
-		Context:     request.Context(),
+	return userData{
 		UserID:      token.ID,
 		UserName:    token.Name,
 		UserImageID: token.ImageID,
-	}
-
-	return ctx, conn, nil
+	}, conn, nil
 }
 
-func readMessages(ctx socketContext, conn *websocket.Conn, subscriber service.Subscriber,
-	messageHandler func(ctx socketContext, body []byte),
-	closeHandler func(ctx socketContext, subscriber service.Subscriber)) {
-	defer closeHandler(ctx, subscriber)
+type readContext struct {
+	context    context.Context
+	conn       *websocket.Conn
+	subscriber service.Subscriber
+	userData   userData
+}
+
+func readMessages(context *readContext,
+	messageHandler func(ctx context.Context, userData userData, body []byte),
+	closeHandler func(ctx context.Context, userData userData, subscriber service.Subscriber)) {
+	defer closeHandler(context.context, context.userData, context.subscriber)
 	for {
-		messageType, data, err := conn.ReadMessage()
+		messageType, data, err := context.conn.ReadMessage()
 
 		if err != nil {
 			return
@@ -88,17 +103,17 @@ func readMessages(ctx socketContext, conn *websocket.Conn, subscriber service.Su
 
 		switch messageType {
 		case websocket.TextMessage:
-			messageHandler(ctx, data)
+			messageHandler(context.context, context.userData, data)
 		case websocket.CloseMessage:
-			_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "closing connection"))
+			_ = context.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "closing connection"))
 			return
 		case websocket.PingMessage:
-			err = conn.WriteMessage(websocket.PongMessage, data)
+			err = context.conn.WriteMessage(websocket.PongMessage, data)
 			if err != nil {
 				return
 			}
 		default:
-			_ = conn.WriteMessage(websocket.TextMessage, websocket.FormatCloseMessage(websocket.CloseUnsupportedData, "closing connection"))
+			_ = context.conn.WriteMessage(websocket.TextMessage, websocket.FormatCloseMessage(websocket.CloseUnsupportedData, "closing connection"))
 			return
 		}
 	}
@@ -151,13 +166,4 @@ func validateId(id string) (bool, error) {
 	}
 
 	return true, nil
-}
-
-func getQueryValue(name string, splitQueryStr []string) string {
-	for _, param := range splitQueryStr {
-		if strings.HasPrefix(param, name) {
-			return strings.TrimPrefix(param, name+"=")
-		}
-	}
-	return ""
 }

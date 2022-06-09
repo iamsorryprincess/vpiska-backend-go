@@ -10,9 +10,7 @@ import (
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/logger"
 )
 
-func NewHandler(logger logger.Logger, tokenManager auth.TokenManager, events service.Events, publisher service.Publisher) http.Handler {
-	mux := http.NewServeMux()
+func InitWebsocketsRoutes(mux *http.ServeMux, logger logger.Logger, tokenManager auth.TokenManager, events service.Events, publisher service.Publisher) {
 	v1Handler := v1.NewHandler(time.Second*120, logger, tokenManager, events, publisher)
 	v1Handler.InitRoutes(mux)
-	return mux
 }

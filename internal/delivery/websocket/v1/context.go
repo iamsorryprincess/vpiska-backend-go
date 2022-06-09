@@ -3,12 +3,14 @@ package v1
 import "context"
 
 type socketContext struct {
-	EventID     string
-	UserID      string
-	UserName    string
-	UserImageID string
 	context.Context
 	ch <-chan struct{}
+}
+
+func newSocketContext(ctx context.Context) context.Context {
+	return socketContext{
+		Context: ctx,
+	}
 }
 
 func (c socketContext) Done() <-chan struct{} {

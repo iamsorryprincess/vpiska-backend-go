@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -9,8 +10,7 @@ import (
 )
 
 func (h *Handler) upgradeEventConnection(writer http.ResponseWriter, request *http.Request) {
-	params := strings.Split(request.URL.RawQuery, "&")
-	eventId := getQueryValue("eventId", params)
+	eventId := request.URL.Query().Get("eventId")
 	isValid, err := validateId(eventId)
 
 	if err != nil {
@@ -24,23 +24,24 @@ func (h *Handler) upgradeEventConnection(writer http.ResponseWriter, request *ht
 		return
 	}
 
-	ctx, conn, err := h.upgradeConnection(writer, request)
+	userInfo, conn, err := h.upgradeConnection(writer, request)
 
 	if err != nil {
 		return
 	}
 
-	ctx.EventID = eventId
+	userInfo.EventID = eventId
 	ch := make(chan []byte)
 	sub := newSubscriber(ch)
 	h.publisher.Subscribe(eventId, sub)
+	websocketContext := &readContext{context: newSocketContext(request.Context()), conn: conn, subscriber: sub, userData: userInfo}
 
-	go readMessages(ctx, conn, sub, h.eventHandler, h.eventCloseHandler)
+	go readMessages(websocketContext, h.eventHandler, h.eventCloseHandler)
 	go writeMessages(h.pingPeriod, conn, ch)
 
 	err = h.events.AddUserInfo(request.Context(), service.AddUserInfoInput{
 		EventID: eventId,
-		UserID:  ctx.UserID,
+		UserID:  userInfo.UserID,
 	})
 
 	if err != nil {
@@ -58,7 +59,7 @@ func (h *Handler) upgradeEventConnection(writer http.ResponseWriter, request *ht
 	}
 }
 
-func (h *Handler) eventHandler(ctx socketContext, body []byte) {
+func (h *Handler) eventHandler(ctx context.Context, userData userData, body []byte) {
 	prefix, message, isFound := strings.Cut(string(body), "/")
 	if !isFound {
 		return
@@ -67,10 +68,10 @@ func (h *Handler) eventHandler(ctx socketContext, body []byte) {
 	case "chatMessage":
 		{
 			err := h.events.SendChatMessage(ctx, service.ChatMessageInput{
-				EventID:     ctx.EventID,
-				UserID:      ctx.UserID,
-				UserName:    ctx.UserName,
-				UserImageID: ctx.UserImageID,
+				EventID:     userData.EventID,
+				UserID:      userData.UserID,
+				UserName:    userData.UserName,
+				UserImageID: userData.UserImageID,
 				Message:     message,
 			})
 
@@ -85,9 +86,9 @@ func (h *Handler) eventHandler(ctx socketContext, body []byte) {
 	}
 }
 
-func (h *Handler) eventCloseHandler(ctx socketContext, subscriber service.Subscriber) {
-	h.publisher.Unsubscribe(ctx.EventID, subscriber)
-	err := h.events.RemoveUserInfo(ctx, ctx.EventID, ctx.UserID)
+func (h *Handler) eventCloseHandler(ctx context.Context, userData userData, subscriber service.Subscriber) {
+	h.publisher.Unsubscribe(userData.EventID, subscriber)
+	err := h.events.RemoveUserInfo(ctx, userData.EventID, userData.UserID)
 
 	if err != nil {
 		if domain.IsInternalError(err) {

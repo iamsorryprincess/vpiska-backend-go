@@ -81,7 +81,7 @@ func Run() {
 	httpServer := server.NewServer(configuration.Server.Port, handler)
 
 	go func() {
-		if err = httpServer.Run(); err != nil && errors.Is(err, http.ErrServerClosed) {
+		if err = httpServer.Run(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			appLogger.LogError(err)
 		}
 	}()

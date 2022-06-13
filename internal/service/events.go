@@ -283,16 +283,23 @@ func (s *eventService) AddMedia(ctx context.Context, input *AddMediaInput) error
 		return err
 	}
 
-	err = s.repository.AddMedia(ctx, input.EventID, domain.MediaInfo{
+	mediaInfo := domain.MediaInfo{
 		ID:          mediaId,
 		ContentType: input.ContentType,
-	})
+	}
+	err = s.repository.AddMedia(ctx, input.EventID, mediaInfo)
 
 	if err != nil {
 		return err
 	}
 
-	s.publisher.Publish(input.EventID, []byte("mediaAdded/"+mediaId))
+	data, err := json.Marshal(mediaInfo)
+
+	if err != nil {
+		return err
+	}
+
+	s.publisher.Publish(input.EventID, []byte("mediaAdded/"+string(data)))
 	return nil
 }
 

@@ -1,13 +1,18 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
 )
+
+const invalidMethod = "invalid method"
 
 type userID string
 
@@ -17,7 +22,7 @@ var unauthorizedResponse = newErrorResponse(auth.ErrInvalidToken.Error())
 func (h *Handler) GET(next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodGet {
-			h.writeJSONResponse(writer, newErrorResponse("invalid method"))
+			h.writeJSONResponse(writer, newErrorResponse(invalidMethod))
 			return
 		}
 		next.ServeHTTP(writer, request)
@@ -27,7 +32,7 @@ func (h *Handler) GET(next http.HandlerFunc) http.HandlerFunc {
 func (h *Handler) POST(next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodPost {
-			h.writeJSONResponse(writer, newErrorResponse("invalid method"))
+			h.writeJSONResponse(writer, newErrorResponse(invalidMethod))
 			return
 		}
 		next.ServeHTTP(writer, request)
@@ -37,7 +42,7 @@ func (h *Handler) POST(next http.HandlerFunc) http.HandlerFunc {
 func (h *Handler) DELETE(next http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodDelete {
-			h.writeJSONResponse(writer, newErrorResponse("invalid method"))
+			h.writeJSONResponse(writer, newErrorResponse(invalidMethod))
 			return
 		}
 		next.ServeHTTP(writer, request)
@@ -70,6 +75,43 @@ func (h *Handler) Recover(next http.Handler) http.Handler {
 			}
 		}()
 		next.ServeHTTP(writer, request)
+	})
+}
+
+func (h *Handler) Logging(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		var buf bytes.Buffer
+		tee := io.TeeReader(request.Body, &buf)
+		body, err := ioutil.ReadAll(tee)
+		if err != nil {
+			h.logger.LogError(err)
+			h.writeJSONResponse(writer, newErrorResponse(internalError))
+			return
+		}
+
+		requestContentType := request.Header.Get("Content-Type")
+		switch requestContentType {
+		case contentTypeJSON:
+			h.logger.LogHttpRequest(request.RequestURI, request.Method, string(body), requestContentType)
+			break
+		default:
+			h.logger.LogHttpRequest(request.RequestURI, request.Method, "(hidden)", requestContentType)
+			break
+		}
+
+		request.Body = io.NopCloser(&buf)
+		loggingWriter := newCustomWriter(writer)
+		next.ServeHTTP(loggingWriter, request)
+
+		responseContentType := writer.Header().Get("Content-Type")
+		switch responseContentType {
+		case contentTypeJSON:
+			h.logger.LogHttpResponse(request.RequestURI, request.Method, loggingWriter.StatusCode, string(loggingWriter.Body), responseContentType)
+			break
+		default:
+			h.logger.LogHttpResponse(request.RequestURI, request.Method, loggingWriter.StatusCode, "(hidden)", responseContentType)
+			break
+		}
 	})
 }
 

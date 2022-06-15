@@ -115,8 +115,8 @@ func (s *userService) Update(ctx context.Context, input UpdateUserInput) (string
 
 	if input.Name == "" && input.Phone == "" {
 		return s.auth.GetAccessToken(auth.TokenData{
-			ID:      input.ID,
-			Name:    input.Name,
+			ID:      model.ID,
+			Name:    model.Name,
 			ImageID: model.ImageID,
 		})
 	}
@@ -291,7 +291,7 @@ func (s *userService) updateName(ctx context.Context, userId string, name string
 	}
 
 	if namesCount > 0 {
-		return "", err
+		return "", domain.ErrNameAlreadyUse
 	}
 
 	if err = s.repository.UpdateName(ctx, userId, name); err != nil {
@@ -313,7 +313,7 @@ func (s *userService) updatePhone(ctx context.Context, userId string, name strin
 	}
 
 	if phonesCount > 0 {
-		return "", err
+		return "", domain.ErrPhoneAlreadyUse
 	}
 
 	if err = s.repository.UpdatePhone(ctx, userId, phone); err != nil {

@@ -23,5 +23,5 @@ func NewHandler(services *service.Services, logger logger.Logger, tokenManager a
 	handler := v1.NewHandler(logger, services, tokenManager)
 	handler.InitAPI(mux)
 	websocket.InitWebsocketsRoutes(mux, logger, tokenManager, services.Events, services.Publisher)
-	return handler.Recover(mux)
+	return handler.Recover(handler.Logging(mux))
 }

@@ -32,23 +32,19 @@ import (
 // @name Authorization
 
 func Run() {
-	appLogger, logFile, err := logger.NewLogLogger()
-	defer logFile.Close()
-
+	appLogger, logFile, err := logger.NewZeroLogger()
 	if err != nil {
-		log.Fatal(err)
-		return
+		log.Fatalln(err)
 	}
 
+	defer logFile.Close()
 	configuration, err := config.Parse()
-
 	if err != nil {
 		appLogger.LogError(err)
 		return
 	}
 
 	repositories, err := repository.NewRepositories(configuration.Database.ConnectionString, configuration.Database.DbName)
-
 	if err != nil {
 		appLogger.LogError(err)
 		return
@@ -57,21 +53,18 @@ func Run() {
 	jwtDuration := time.Hour * 24 * 3
 	jwtTokenManager := auth.NewJwtManager(configuration.JWT.Key, configuration.JWT.Issuer, configuration.JWT.Audience, jwtDuration)
 	passwordManager, err := hash.NewPasswordHashManager(configuration.Hash.Key)
-
 	if err != nil {
 		appLogger.LogError(err)
 		return
 	}
 
 	fileStorage, err := storage.NewLocalFileStorage("media")
-
 	if err != nil {
 		appLogger.LogError(err)
 		return
 	}
 
 	services, err := service.NewServices(appLogger, repositories, passwordManager, jwtTokenManager, fileStorage)
-
 	if err != nil {
 		appLogger.LogError(err)
 		return

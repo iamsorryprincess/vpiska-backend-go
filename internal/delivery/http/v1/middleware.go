@@ -80,37 +80,40 @@ func (h *Handler) Recover(next http.Handler) http.Handler {
 
 func (h *Handler) Logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		var buf bytes.Buffer
-		tee := io.TeeReader(request.Body, &buf)
-		body, err := ioutil.ReadAll(tee)
-		if err != nil {
-			h.logger.LogError(err)
-			h.writeJSONResponse(writer, newErrorResponse(internalError))
-			return
-		}
+		if strings.Contains(request.RequestURI, "/api/") && !strings.Contains(request.RequestURI, "/websockets/") {
+			var buf bytes.Buffer
+			tee := io.TeeReader(request.Body, &buf)
+			body, err := ioutil.ReadAll(tee)
+			if err != nil {
+				h.logger.LogError(err)
+				h.writeJSONResponse(writer, newErrorResponse(internalError))
+				return
+			}
 
-		requestContentType := request.Header.Get("Content-Type")
-		switch requestContentType {
-		case contentTypeJSON:
-			h.logger.LogHttpRequest(request.RequestURI, request.Method, string(body), requestContentType)
-			break
-		default:
-			h.logger.LogHttpRequest(request.RequestURI, request.Method, "(hidden)", requestContentType)
-			break
-		}
+			requestContentType := request.Header.Get("Content-Type")
+			switch requestContentType {
+			case contentTypeJSON:
+				h.logger.LogHttpRequest(request.RequestURI, request.Method, string(body), requestContentType)
+				break
+			default:
+				h.logger.LogHttpRequest(request.RequestURI, request.Method, "(hidden)", requestContentType)
+				break
+			}
 
-		request.Body = io.NopCloser(&buf)
-		loggingWriter := newCustomWriter(writer)
-		next.ServeHTTP(loggingWriter, request)
-
-		responseContentType := writer.Header().Get("Content-Type")
-		switch responseContentType {
-		case contentTypeJSON:
-			h.logger.LogHttpResponse(request.RequestURI, request.Method, loggingWriter.StatusCode, string(loggingWriter.Body), responseContentType)
-			break
-		default:
-			h.logger.LogHttpResponse(request.RequestURI, request.Method, loggingWriter.StatusCode, "(hidden)", responseContentType)
-			break
+			request.Body = io.NopCloser(&buf)
+			loggingWriter := newCustomWriter(writer)
+			next.ServeHTTP(loggingWriter, request)
+			responseContentType := writer.Header().Get("Content-Type")
+			switch responseContentType {
+			case contentTypeJSON:
+				h.logger.LogHttpResponse(request.RequestURI, request.Method, loggingWriter.StatusCode, string(loggingWriter.Body), responseContentType)
+				break
+			default:
+				h.logger.LogHttpResponse(request.RequestURI, request.Method, loggingWriter.StatusCode, "(hidden)", responseContentType)
+				break
+			}
+		} else {
+			next.ServeHTTP(writer, request)
 		}
 	})
 }

@@ -70,7 +70,7 @@ func Run() {
 		return
 	}
 
-	handler := appHttp.NewHandler(services, appLogger, jwtTokenManager)
+	handler := appHttp.NewHandler(services, appLogger, jwtTokenManager, configuration.Logging.TraceRequestsEnable)
 	httpServer := server.NewServer(configuration.Server.Port, handler)
 
 	go func() {

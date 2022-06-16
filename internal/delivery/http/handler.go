@@ -11,7 +11,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-func NewHandler(services *service.Services, logger logger.Logger, tokenManager auth.TokenManager) http.Handler {
+func NewHandler(services *service.Services, logger logger.Logger, tokenManager auth.TokenManager, traceLoggingRequestEnable bool) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", func(writer http.ResponseWriter, request *http.Request) {
@@ -23,5 +23,8 @@ func NewHandler(services *service.Services, logger logger.Logger, tokenManager a
 	handler := v1.NewHandler(logger, services, tokenManager)
 	handler.InitAPI(mux)
 	websocket.InitWebsocketsRoutes(mux, logger, tokenManager, services.Events, services.Publisher)
-	return handler.Recover(handler.Logging(mux))
+	if traceLoggingRequestEnable {
+		return handler.Recover(handler.Logging(mux))
+	}
+	return handler.Recover(mux)
 }

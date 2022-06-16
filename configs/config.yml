@@ -2,7 +2,7 @@ server:
   port: 5000
 
 database:
-  connectionString: "mongodb://kekit*:qweasd123*@mongo:27017"
+  connectionString: "mongodb://localhost:27017"
   dbName: "vpiska"
 
 jwt:
@@ -13,3 +13,6 @@ jwt:
 
 hash:
   key: "fbac497e4b44564f831f78d539b81a0c"
+
+logging:
+  traceRequestsEnable: true

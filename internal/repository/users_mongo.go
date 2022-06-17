@@ -21,7 +21,7 @@ func newMongoUsers(db *mongo.Database, collectionName string) Users {
 }
 
 func (r *userRepository) GetNamesCount(ctx context.Context, name string) (int64, error) {
-	filter := bson.D{{"name", name}}
+	filter := bson.D{{Key: "name", Value: name}}
 	count, err := r.db.CountDocuments(ctx, filter)
 
 	if err != nil {
@@ -32,7 +32,7 @@ func (r *userRepository) GetNamesCount(ctx context.Context, name string) (int64,
 }
 
 func (r *userRepository) GetPhonesCount(ctx context.Context, phone string) (int64, error) {
-	filter := bson.D{{"phone", phone}}
+	filter := bson.D{{Key: "phone", Value: phone}}
 	count, err := r.db.CountDocuments(ctx, filter)
 
 	if err != nil {
@@ -54,7 +54,7 @@ func (r *userRepository) CreateUser(ctx context.Context, user domain.User) (stri
 }
 
 func (r *userRepository) GetUserByID(ctx context.Context, id string) (domain.User, error) {
-	filter := bson.D{{"_id", id}}
+	filter := bson.D{{Key: "_id", Value: id}}
 	model := domain.User{}
 
 	if err := r.db.FindOne(ctx, filter).Decode(&model); err != nil {
@@ -68,7 +68,7 @@ func (r *userRepository) GetUserByID(ctx context.Context, id string) (domain.Use
 }
 
 func (r *userRepository) GetUserByPhone(ctx context.Context, phone string) (domain.User, error) {
-	filter := bson.D{{"phone", phone}}
+	filter := bson.D{{Key: "phone", Value: phone}}
 	model := domain.User{}
 
 	if err := r.db.FindOne(ctx, filter).Decode(&model); err != nil {
@@ -82,8 +82,8 @@ func (r *userRepository) GetUserByPhone(ctx context.Context, phone string) (doma
 }
 
 func (r *userRepository) ChangePassword(ctx context.Context, id string, password string) error {
-	filter := bson.D{{"_id", id}}
-	update := bson.D{{"$set", bson.D{{"password", password}}}}
+	filter := bson.D{{Key: "_id", Value: id}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "password", Value: password}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 
 	if err != nil {
@@ -98,8 +98,8 @@ func (r *userRepository) ChangePassword(ctx context.Context, id string, password
 }
 
 func (r *userRepository) SetImageId(ctx context.Context, userId string, imageId string) error {
-	filter := bson.D{{"_id", userId}}
-	update := bson.D{{"$set", bson.D{{"image_id", imageId}}}}
+	filter := bson.D{{Key: "_id", Value: userId}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "image_id", Value: imageId}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 
 	if err != nil {
@@ -114,8 +114,8 @@ func (r *userRepository) SetImageId(ctx context.Context, userId string, imageId 
 }
 
 func (r *userRepository) UpdateName(ctx context.Context, userId string, name string) error {
-	filter := bson.D{{"_id", userId}}
-	update := bson.D{{"$set", bson.D{{"name", name}}}}
+	filter := bson.D{{Key: "_id", Value: userId}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "name", Value: name}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 
 	if err != nil {
@@ -130,8 +130,8 @@ func (r *userRepository) UpdateName(ctx context.Context, userId string, name str
 }
 
 func (r *userRepository) UpdatePhone(ctx context.Context, userId string, phone string) error {
-	filter := bson.D{{"_id", userId}}
-	update := bson.D{{"$set", bson.D{{"phone", phone}}}}
+	filter := bson.D{{Key: "_id", Value: userId}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "phone", Value: phone}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 
 	if err != nil {
@@ -146,10 +146,10 @@ func (r *userRepository) UpdatePhone(ctx context.Context, userId string, phone s
 }
 
 func (r *userRepository) UpdateNameAndPhone(ctx context.Context, userId string, name string, phone string) error {
-	filter := bson.D{{"_id", userId}}
-	update := bson.D{{"$set", bson.D{
-		{"name", name},
-		{"phone", phone},
+	filter := bson.D{{Key: "_id", Value: userId}}
+	update := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "name", Value: name},
+		{Key: "phone", Value: phone},
 	}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 

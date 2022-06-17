@@ -33,7 +33,7 @@ func (r *eventsRepository) CreateEvent(ctx context.Context, event domain.Event) 
 }
 
 func (r *eventsRepository) GetEventById(ctx context.Context, id string) (domain.Event, error) {
-	filter := bson.D{{"_id", id}, {"state", domain.EventStateOpened}}
+	filter := bson.D{{Key: "_id", Value: id}, {Key: "state", Value: domain.EventStateOpened}}
 	event := domain.Event{}
 	err := r.db.FindOne(ctx, filter).Decode(&event)
 
@@ -48,7 +48,7 @@ func (r *eventsRepository) GetEventById(ctx context.Context, id string) (domain.
 }
 
 func (r *eventsRepository) GetEventByOwnerId(ctx context.Context, ownerId string) (domain.Event, error) {
-	filter := bson.D{{"owner_id", ownerId}, {"state", domain.EventStateOpened}}
+	filter := bson.D{{Key: "owner_id", Value: ownerId}, {Key: "state", Value: domain.EventStateOpened}}
 	event := domain.Event{}
 	err := r.db.FindOne(ctx, filter).Decode(&event)
 
@@ -63,19 +63,19 @@ func (r *eventsRepository) GetEventByOwnerId(ctx context.Context, ownerId string
 }
 
 func (r *eventsRepository) GetEventsByRange(ctx context.Context, xLeft float64, xRight float64, yLeft float64, yRight float64) ([]domain.EventRangeData, error) {
-	filter := bson.D{{"$and", bson.A{
-		bson.D{{"state", domain.EventStateOpened}},
-		bson.D{{"coordinates.x", bson.D{{"$gte", xLeft}}}},
-		bson.D{{"coordinates.y", bson.D{{"$gte", yLeft}}}},
-		bson.D{{"coordinates.x", bson.D{{"$lte", xRight}}}},
-		bson.D{{"coordinates.y", bson.D{{"$lte", yRight}}}},
+	filter := bson.D{{Key: "$and", Value: bson.A{
+		bson.D{{Key: "state", Value: domain.EventStateOpened}},
+		bson.D{{Key: "coordinates.x", Value: bson.D{{Key: "$gte", Value: xLeft}}}},
+		bson.D{{Key: "coordinates.y", Value: bson.D{{Key: "$gte", Value: yLeft}}}},
+		bson.D{{Key: "coordinates.x", Value: bson.D{{Key: "$lte", Value: xRight}}}},
+		bson.D{{Key: "coordinates.y", Value: bson.D{{Key: "$lte", Value: yRight}}}},
 	}}}
 
 	cursor, err := r.db.Find(ctx, filter, options.Find().SetProjection(bson.D{
-		{"_id", 1},
-		{"name", 1},
-		{"coordinates", 1},
-		{"users_count", bson.D{{"$size", "$users"}}},
+		{Key: "_id", Value: 1},
+		{Key: "name", Value: 1},
+		{Key: "coordinates", Value: 1},
+		{Key: "users_count", Value: bson.D{{Key: "$size", Value: "$users"}}},
 	}))
 
 	if err != nil {
@@ -93,10 +93,10 @@ func (r *eventsRepository) GetEventsByRange(ctx context.Context, xLeft float64, 
 }
 
 func (r *eventsRepository) UpdateEvent(ctx context.Context, id string, address string, coordinates domain.Coordinates) error {
-	filter := bson.D{{"_id", id}, {"state", domain.EventStateOpened}}
-	update := bson.D{{"$set", bson.D{
-		{"address", address},
-		{"coordinates", coordinates},
+	filter := bson.D{{Key: "_id", Value: id}, {Key: "state", Value: domain.EventStateOpened}}
+	update := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "address", Value: address},
+		{Key: "coordinates", Value: coordinates},
 	}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 
@@ -112,8 +112,8 @@ func (r *eventsRepository) UpdateEvent(ctx context.Context, id string, address s
 }
 
 func (r *eventsRepository) RemoveEvent(ctx context.Context, id string) error {
-	filter := bson.D{{"_id", id}, {"state", domain.EventStateOpened}}
-	update := bson.D{{"$set", bson.D{{"state", domain.EventStateClosed}}}}
+	filter := bson.D{{Key: "_id", Value: id}, {Key: "state", Value: domain.EventStateOpened}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "state", Value: domain.EventStateClosed}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 
 	if err != nil {
@@ -128,8 +128,8 @@ func (r *eventsRepository) RemoveEvent(ctx context.Context, id string) error {
 }
 
 func (r *eventsRepository) AddMedia(ctx context.Context, id string, mediaInfo domain.MediaInfo) error {
-	filter := bson.D{{"_id", id}, {"state", domain.EventStateOpened}}
-	update := bson.D{{"$push", bson.D{{"media", mediaInfo}}}}
+	filter := bson.D{{Key: "_id", Value: id}, {Key: "state", Value: domain.EventStateOpened}}
+	update := bson.D{{Key: "$push", Value: bson.D{{Key: "media", Value: mediaInfo}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 
 	if err != nil {
@@ -144,8 +144,8 @@ func (r *eventsRepository) AddMedia(ctx context.Context, id string, mediaInfo do
 }
 
 func (r *eventsRepository) RemoveMedia(ctx context.Context, eventId string, mediaId string) error {
-	filter := bson.D{{"_id", eventId}, {"state", domain.EventStateOpened}}
-	update := bson.D{{"$pull", bson.D{{"media", bson.D{{"_id", mediaId}}}}}}
+	filter := bson.D{{Key: "_id", Value: eventId}, {Key: "state", Value: domain.EventStateOpened}}
+	update := bson.D{{Key: "$pull", Value: bson.D{{Key: "media", Value: bson.D{{Key: "_id", Value: mediaId}}}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 
 	if err != nil {
@@ -160,8 +160,8 @@ func (r *eventsRepository) RemoveMedia(ctx context.Context, eventId string, medi
 }
 
 func (r *eventsRepository) AddUserInfo(ctx context.Context, eventId string, userInfo domain.UserInfo) error {
-	filter := bson.D{{"_id", eventId}, {"state", domain.EventStateOpened}}
-	update := bson.D{{"$push", bson.D{{"users", userInfo}}}}
+	filter := bson.D{{Key: "_id", Value: eventId}, {Key: "state", Value: domain.EventStateOpened}}
+	update := bson.D{{Key: "$push", Value: bson.D{{Key: "users", Value: userInfo}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 
 	if err != nil {
@@ -176,8 +176,8 @@ func (r *eventsRepository) AddUserInfo(ctx context.Context, eventId string, user
 }
 
 func (r *eventsRepository) RemoveUserInfo(ctx context.Context, eventId string, userId string) error {
-	filter := bson.D{{"_id", eventId}, {"state", domain.EventStateOpened}}
-	update := bson.D{{"$pull", bson.D{{"users", bson.D{{"_id", userId}}}}}}
+	filter := bson.D{{Key: "_id", Value: eventId}, {Key: "state", Value: domain.EventStateOpened}}
+	update := bson.D{{Key: "$pull", Value: bson.D{{Key: "users", Value: bson.D{{Key: "_id", Value: userId}}}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 
 	if err != nil {
@@ -192,8 +192,8 @@ func (r *eventsRepository) RemoveUserInfo(ctx context.Context, eventId string, u
 }
 
 func (r *eventsRepository) AddChatMessage(ctx context.Context, id string, chatMessage domain.ChatMessage) error {
-	filter := bson.D{{"_id", id}, {"state", domain.EventStateOpened}}
-	update := bson.D{{"$push", bson.D{{"chat_messages", chatMessage}}}}
+	filter := bson.D{{Key: "_id", Value: id}, {Key: "state", Value: domain.EventStateOpened}}
+	update := bson.D{{Key: "$push", Value: bson.D{{Key: "chat_messages", Value: chatMessage}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 
 	if err != nil {

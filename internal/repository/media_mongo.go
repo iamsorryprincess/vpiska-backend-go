@@ -21,7 +21,7 @@ func newMongoMedia(db *mongo.Database, collectionName string) Media {
 }
 
 func (r *mediaRepository) GetMedia(ctx context.Context, id string) (domain.Media, error) {
-	filter := bson.D{{"_id", id}}
+	filter := bson.D{{Key: "_id", Value: id}}
 	media := domain.Media{}
 
 	if err := r.db.FindOne(ctx, filter).Decode(&media); err != nil {
@@ -46,12 +46,12 @@ func (r *mediaRepository) CreateMedia(ctx context.Context, media domain.Media) (
 }
 
 func (r *mediaRepository) UpdateMedia(ctx context.Context, media domain.Media) error {
-	filter := bson.D{{"_id", media.ID}}
-	update := bson.D{{"$set", bson.D{
-		{"name", media.Name},
-		{"content_type", media.ContentType},
-		{"size", media.Size},
-		{"last_modified_date", media.LastModifiedDate},
+	filter := bson.D{{Key: "_id", Value: media.ID}}
+	update := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "name", Value: media.Name},
+		{Key: "content_type", Value: media.ContentType},
+		{Key: "size", Value: media.Size},
+		{Key: "last_modified_date", Value: media.LastModifiedDate},
 	}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
 
@@ -67,7 +67,7 @@ func (r *mediaRepository) UpdateMedia(ctx context.Context, media domain.Media) e
 }
 
 func (r *mediaRepository) DeleteMedia(ctx context.Context, id string) error {
-	find := bson.D{{"_id", id}}
+	find := bson.D{{Key: "_id", Value: id}}
 	result, err := r.db.DeleteOne(ctx, find)
 
 	if err != nil {

@@ -9,8 +9,6 @@ jobs:
     runs-on: [self-hosted, linux, X64]
     steps:
       - uses: actions/checkout@v2
-      - name: static test
-        run: go vet ./...
       - name: build
         run: docker-compose build api
       - name: deploy

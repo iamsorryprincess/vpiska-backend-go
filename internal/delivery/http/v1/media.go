@@ -44,7 +44,7 @@ func (h *Handler) uploadMedia(writer http.ResponseWriter, request *http.Request)
 		return
 	}
 
-	mediaId, err := h.services.Media.Create(request.Context(), &service.CreateMediaInput{
+	mediaId, err := h.services.Media.Create(request.Context(), service.CreateMediaInput{
 		Name:        header.Filename,
 		ContentType: header.Header.Get("Content-Type"),
 		Size:        header.Size,

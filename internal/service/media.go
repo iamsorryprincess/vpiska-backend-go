@@ -21,7 +21,7 @@ func newMediaService(repository repository.Media, fileStorage storage.FileStorag
 	}
 }
 
-func (s *mediaService) Create(ctx context.Context, input *CreateMediaInput) (string, error) {
+func (s *mediaService) Create(ctx context.Context, input CreateMediaInput) (string, error) {
 	media := domain.Media{
 		Name:             input.Name,
 		ContentType:      input.ContentType,
@@ -45,7 +45,7 @@ func (s *mediaService) Create(ctx context.Context, input *CreateMediaInput) (str
 	return mediaId, nil
 }
 
-func (s *mediaService) Update(ctx context.Context, mediaId string, input *CreateMediaInput) error {
+func (s *mediaService) Update(ctx context.Context, mediaId string, input CreateMediaInput) error {
 	err := s.repository.UpdateMedia(ctx, domain.Media{
 		ID:               mediaId,
 		Name:             input.Name,
@@ -65,20 +65,20 @@ func (s *mediaService) GetMetadata(ctx context.Context, id string) (domain.Media
 	return s.repository.GetMedia(ctx, id)
 }
 
-func (s *mediaService) GetFile(ctx context.Context, id string) (*domain.FileData, error) {
+func (s *mediaService) GetFile(ctx context.Context, id string) (domain.FileData, error) {
 	metadata, err := s.repository.GetMedia(ctx, id)
 
 	if err != nil {
-		return nil, err
+		return domain.FileData{}, err
 	}
 
 	fileData, err := s.storage.Get(id)
 
 	if err != nil {
-		return nil, err
+		return domain.FileData{}, err
 	}
 
-	return &domain.FileData{
+	return domain.FileData{
 		ContentType: metadata.ContentType,
 		Size:        metadata.Size,
 		Data:        fileData,

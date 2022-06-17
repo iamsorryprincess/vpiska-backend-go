@@ -156,7 +156,7 @@ func (s *userService) ChangePassword(ctx context.Context, input ChangePasswordIn
 	})
 }
 
-func (s *userService) SetUserImage(ctx context.Context, input *SetUserImageInput) (imageId string, accessToken string, err error) {
+func (s *userService) SetUserImage(ctx context.Context, input SetUserImageInput) (imageId string, accessToken string, err error) {
 	user, err := s.repository.GetUserByID(ctx, input.UserID)
 
 	if err != nil {
@@ -164,7 +164,7 @@ func (s *userService) SetUserImage(ctx context.Context, input *SetUserImageInput
 	}
 
 	if user.ImageID == "" {
-		imageId, err = s.fileStorage.Create(ctx, &CreateMediaInput{
+		imageId, err = s.fileStorage.Create(ctx, CreateMediaInput{
 			Name:        input.FileName,
 			ContentType: input.ContentType,
 			Size:        input.Size,
@@ -194,7 +194,7 @@ func (s *userService) SetUserImage(ctx context.Context, input *SetUserImageInput
 		return imageId, accessToken, nil
 	}
 
-	err = s.fileStorage.Update(ctx, user.ImageID, &CreateMediaInput{
+	err = s.fileStorage.Update(ctx, user.ImageID, CreateMediaInput{
 		Name:        input.FileName,
 		ContentType: input.ContentType,
 		Size:        input.Size,

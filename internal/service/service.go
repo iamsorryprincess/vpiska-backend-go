@@ -19,10 +19,10 @@ type CreateMediaInput struct {
 }
 
 type Media interface {
-	Create(ctx context.Context, input *CreateMediaInput) (string, error)
-	Update(ctx context.Context, mediaId string, input *CreateMediaInput) error
+	Create(ctx context.Context, input CreateMediaInput) (string, error)
+	Update(ctx context.Context, mediaId string, input CreateMediaInput) error
 	GetMetadata(ctx context.Context, id string) (domain.Media, error)
-	GetFile(ctx context.Context, id string) (*domain.FileData, error)
+	GetFile(ctx context.Context, id string) (domain.FileData, error)
 	Delete(ctx context.Context, id string) error
 }
 
@@ -61,7 +61,7 @@ type Users interface {
 	Login(ctx context.Context, input LoginUserInput) (domain.UserLogin, error)
 	Update(ctx context.Context, input UpdateUserInput) (string, error)
 	ChangePassword(ctx context.Context, input ChangePasswordInput) (string, error)
-	SetUserImage(ctx context.Context, input *SetUserImageInput) (imageId string, accessToken string, err error)
+	SetUserImage(ctx context.Context, input SetUserImageInput) (imageId string, accessToken string, err error)
 }
 
 type CreateEventInput struct {
@@ -120,7 +120,7 @@ type Events interface {
 	AddUserInfo(ctx context.Context, input AddUserInfoInput) error
 	RemoveUserInfo(ctx context.Context, eventId string, userId string) error
 	SendChatMessage(ctx context.Context, input ChatMessageInput) error
-	AddMedia(ctx context.Context, input *AddMediaInput) error
+	AddMedia(ctx context.Context, input AddMediaInput) error
 	RemoveMedia(ctx context.Context, input RemoveMediaInput) error
 }
 

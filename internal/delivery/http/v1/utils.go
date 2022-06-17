@@ -147,25 +147,3 @@ func validateId(id string) ([]string, error) {
 
 	return validationErrors, nil
 }
-
-type customWriter struct {
-	http.ResponseWriter
-	StatusCode int
-	Body       []byte
-}
-
-func newCustomWriter(writer http.ResponseWriter) *customWriter {
-	return &customWriter{
-		ResponseWriter: writer,
-	}
-}
-
-func (w *customWriter) Write(body []byte) (int, error) {
-	w.Body = body
-	return w.ResponseWriter.Write(body)
-}
-
-func (w *customWriter) WriteHeader(statusCode int) {
-	w.StatusCode = statusCode
-	w.ResponseWriter.WriteHeader(statusCode)
-}

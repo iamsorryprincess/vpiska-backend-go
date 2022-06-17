@@ -329,7 +329,7 @@ func (h *Handler) addMediaToEvent(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	if err = h.services.Events.AddMedia(request.Context(), &service.AddMediaInput{
+	if err = h.services.Events.AddMedia(request.Context(), service.AddMediaInput{
 		EventID:     eventId,
 		UserID:      getUserID(request),
 		FileName:    header.Filename,

@@ -261,7 +261,7 @@ func (s *eventService) SendChatMessage(ctx context.Context, input ChatMessageInp
 	return nil
 }
 
-func (s *eventService) AddMedia(ctx context.Context, input *AddMediaInput) error {
+func (s *eventService) AddMedia(ctx context.Context, input AddMediaInput) error {
 	event, err := s.repository.GetEventById(ctx, input.EventID)
 
 	if err != nil {
@@ -272,7 +272,7 @@ func (s *eventService) AddMedia(ctx context.Context, input *AddMediaInput) error
 		return domain.ErrUserIsNotOwner
 	}
 
-	mediaId, err := s.fileStorage.Create(ctx, &CreateMediaInput{
+	mediaId, err := s.fileStorage.Create(ctx, CreateMediaInput{
 		Name:        input.FileName,
 		ContentType: input.ContentType,
 		Size:        input.FileSize,

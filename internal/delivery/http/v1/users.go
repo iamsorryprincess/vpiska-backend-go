@@ -288,7 +288,7 @@ func (h *Handler) setUserImage(writer http.ResponseWriter, request *http.Request
 		return
 	}
 
-	imageId, accessToken, err := h.services.Users.SetUserImage(request.Context(), &service.SetUserImageInput{
+	imageId, accessToken, err := h.services.Users.SetUserImage(request.Context(), service.SetUserImageInput{
 		UserID:      getUserID(request),
 		FileName:    header.Filename,
 		ContentType: header.Header.Get("Content-Type"),

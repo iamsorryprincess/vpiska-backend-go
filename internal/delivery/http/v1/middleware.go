@@ -101,15 +101,15 @@ func (h *Handler) Logging(next http.Handler) http.Handler {
 			}
 
 			request.Body = io.NopCloser(&buf)
-			loggingWriter := newCustomWriter(writer)
-			next.ServeHTTP(loggingWriter, request)
+			writerWithState := newLoggingWriter(writer)
+			next.ServeHTTP(writerWithState, request)
 			responseContentType := writer.Header().Get("Content-Type")
 			switch responseContentType {
 			case contentTypeJSON:
-				h.logger.LogHttpResponse(request.RequestURI, request.Method, loggingWriter.StatusCode, string(loggingWriter.Body), responseContentType)
+				h.logger.LogHttpResponse(request.RequestURI, request.Method, writerWithState.StatusCode, string(writerWithState.Body), responseContentType)
 				break
 			default:
-				h.logger.LogHttpResponse(request.RequestURI, request.Method, loggingWriter.StatusCode, "(hidden)", responseContentType)
+				h.logger.LogHttpResponse(request.RequestURI, request.Method, writerWithState.StatusCode, "(hidden)", responseContentType)
 				break
 			}
 		} else {

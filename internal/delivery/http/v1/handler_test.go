@@ -2,6 +2,7 @@ package v1
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/config"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
@@ -56,6 +58,20 @@ func TestHandler(t *testing.T) {
 
 	defer cleaner.Clean()
 	hashManager, err := hash.NewPasswordHashManager(configuration.Hash.Key)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	password, err := hashManager.HashPassword("string")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = repositories.Users.CreateUser(context.Background(), domain.User{
+		Name:     "integration_tests",
+		Phone:    "1111111111",
+		Password: password,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}

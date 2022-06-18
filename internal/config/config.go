@@ -31,18 +31,18 @@ type Configuration struct {
 	} `yaml:"logging"`
 }
 
-func Parse() (*Configuration, error) {
+func Parse(configPath string) (*Configuration, error) {
 	configWay := os.Getenv("CONFIG")
 	switch configWay {
 	case "env":
 		return parseFromENV()
 	default:
-		return parseFromFile()
+		return parseFromFile(configPath)
 	}
 }
 
-func parseFromFile() (*Configuration, error) {
-	f, openFileErr := os.Open("configs/config.yml")
+func parseFromFile(configPath string) (*Configuration, error) {
+	f, openFileErr := os.Open(configPath)
 
 	if openFileErr != nil {
 		return nil, openFileErr

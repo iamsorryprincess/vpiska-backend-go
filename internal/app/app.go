@@ -38,13 +38,13 @@ func Run() {
 	}
 
 	defer logFile.Close()
-	configuration, err := config.Parse()
+	configuration, err := config.Parse("configs/config.yml")
 	if err != nil {
 		appLogger.LogError(err)
 		return
 	}
 
-	repositories, err := repository.NewRepositories(configuration.Database.ConnectionString, configuration.Database.DbName)
+	repositories, _, err := repository.NewRepositories(configuration.Database.ConnectionString, configuration.Database.DbName)
 	if err != nil {
 		appLogger.LogError(err)
 		return

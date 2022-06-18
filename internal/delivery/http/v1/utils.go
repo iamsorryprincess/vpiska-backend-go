@@ -131,6 +131,12 @@ func (h *Handler) parseFormFile(writer http.ResponseWriter, request *http.Reques
 		return nil, nil, false
 	}
 
+	if err = request.Body.Close(); err != nil {
+		h.logger.LogError(err)
+		h.writeJSONResponse(writer, newErrorResponse(internalError))
+		return nil, nil, false
+	}
+
 	return data, header, true
 }
 
@@ -146,4 +152,13 @@ func validateId(id string) ([]string, error) {
 	}
 
 	return validationErrors, nil
+}
+
+func containsError(err errorResponse, errs []errorResponse) bool {
+	for _, item := range errs {
+		if item.ErrorCode == err.ErrorCode {
+			return true
+		}
+	}
+	return false
 }

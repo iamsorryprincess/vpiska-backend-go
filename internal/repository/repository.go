@@ -49,22 +49,26 @@ type Repositories struct {
 	Events Events
 }
 
-func NewRepositories(connectionString string, dbName string) (*Repositories, error) {
+type TestsCleaner interface {
+	Clean() error
+}
+
+func NewRepositories(connectionString string, dbName string) (*Repositories, TestsCleaner, error) {
 	client, err := mongo.NewClient(options.Client().ApplyURI(connectionString))
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err = client.Connect(ctx); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err = client.Ping(context.Background(), nil); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	db := client.Database(dbName)
@@ -73,5 +77,5 @@ func NewRepositories(connectionString string, dbName string) (*Repositories, err
 		Media:  newMongoMedia(db, "media"),
 		Users:  newMongoUsers(db, "users"),
 		Events: newMongoEvents(db, "events"),
-	}, nil
+	}, newMongoTestsCleaner(db), nil
 }

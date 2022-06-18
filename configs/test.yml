@@ -1,0 +1,18 @@
+server:
+  port: 9090
+
+database:
+  connectionString: "mongodb://localhost:27017"
+  dbName: "test"
+
+jwt:
+  key: "vpiska_secretkey!123"
+  issuer: "VpiskaServer"
+  audience: "VpiskaClient"
+  lifetimeDays: 3
+
+hash:
+  key: "fbac497e4b44564f831f78d539b81a0c"
+
+logging:
+  traceRequestsEnable: false

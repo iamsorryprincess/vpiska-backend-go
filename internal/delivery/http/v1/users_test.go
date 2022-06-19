@@ -6,8 +6,9 @@ import (
 )
 
 func TestUsers(t *testing.T) {
-	t.Run("create user", TestCreateUser)
-	t.Run("login user", TestLoginUser)
+	t.Run("create", TestCreateUser)
+	t.Run("login", TestLoginUser)
+	t.Run("update", TestUpdateUser)
 }
 
 func TestCreateUser(t *testing.T) {
@@ -97,14 +98,13 @@ func TestCreateUser(t *testing.T) {
 			Handler:             testHandler.createUser,
 		},
 		{
-			Name:                "success create",
+			Name:                "success",
 			Url:                 "/api/v1/users/create",
 			Method:              http.MethodPost,
 			Body:                `{"name":"test","phone":"9374113516","password":"string","confirmPassword":"string"}`,
 			RequestContentType:  contentTypeJSON,
 			ResponseContentType: contentTypeJSON,
 			ExpectedStatusCode:  http.StatusOK,
-			CheckBody:           false,
 			Handler:             testHandler.createUser,
 		},
 		{
@@ -237,6 +237,148 @@ func TestLoginUser(t *testing.T) {
 			CheckBody:           true,
 			ExpectedBody:        `{"isSuccess":false,"errors":[{"errorCode":"InvalidPassword"}],"result":null}`,
 			Handler:             testHandler.loginUser,
+		},
+		{
+			Name:                "success",
+			Url:                 "/api/v1/users/login",
+			Method:              http.MethodPost,
+			Body:                `{"phone":"1111111111","password":"string"}`,
+			RequestContentType:  contentTypeJSON,
+			ResponseContentType: contentTypeJSON,
+			ExpectedStatusCode:  http.StatusOK,
+			Handler:             testHandler.loginUser,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			testHandlerMethod(test, t)
+		})
+	}
+}
+
+func TestUpdateUser(t *testing.T) {
+	tests := []testData{
+		{
+			Name:                "unauthorized",
+			Url:                 "/api/v1/users/update",
+			Method:              http.MethodPost,
+			Body:                `{"phone":"string","name":"string"}`,
+			RequestContentType:  contentTypeJSON,
+			ResponseContentType: contentTypeJSON,
+			ExpectedStatusCode:  http.StatusOK,
+			CheckBody:           true,
+			ExpectedBody:        `{"isSuccess":false,"errors":[{"errorCode":"unauthorized"}],"result":null}`,
+			Handler:             testHandler.jwtAuth(testHandler.updateUser),
+		},
+		{
+			Name:                "invalid phone format",
+			Url:                 "/api/v1/users/update",
+			Method:              http.MethodPost,
+			Body:                `{"name": "test","phone":"123"}`,
+			AuthHeader:          testUserAccessToken,
+			RequestContentType:  contentTypeJSON,
+			ResponseContentType: contentTypeJSON,
+			ExpectedStatusCode:  http.StatusOK,
+			CheckBody:           true,
+			ExpectedBody:        `{"isSuccess":false,"errors":[{"errorCode":"PhoneRegexInvalid"}],"result":null}`,
+			Handler:             testHandler.jwtAuth(testHandler.updateUser),
+		},
+		{
+			Name:                "empty string",
+			Url:                 "/api/v1/users/update",
+			Method:              http.MethodPost,
+			Body:                ``,
+			AuthHeader:          testUserAccessToken,
+			RequestContentType:  contentTypeJSON,
+			ResponseContentType: contentTypeJSON,
+			ExpectedStatusCode:  http.StatusOK,
+			CheckBody:           true,
+			ExpectedBody:        `{"isSuccess":false,"errors":[{"errorCode":"InternalError"}],"result":null}`,
+			Handler:             testHandler.jwtAuth(testHandler.updateUser),
+		},
+		{
+			Name:                "name already use",
+			Url:                 "/api/v1/users/update",
+			Method:              http.MethodPost,
+			Body:                `{"name": "integration_tests"}`,
+			AuthHeader:          testUserAccessToken,
+			RequestContentType:  contentTypeJSON,
+			ResponseContentType: contentTypeJSON,
+			ExpectedStatusCode:  http.StatusOK,
+			CheckBody:           true,
+			ExpectedBody:        `{"isSuccess":false,"errors":[{"errorCode":"NameAlreadyUse"}],"result":null}`,
+			Handler:             testHandler.jwtAuth(testHandler.updateUser),
+		},
+		{
+			Name:                "phone already use",
+			Url:                 "/api/v1/users/update",
+			Method:              http.MethodPost,
+			Body:                `{"phone": "1111111111"}`,
+			AuthHeader:          testUserAccessToken,
+			RequestContentType:  contentTypeJSON,
+			ResponseContentType: contentTypeJSON,
+			ExpectedStatusCode:  http.StatusOK,
+			CheckBody:           true,
+			ExpectedBody:        `{"isSuccess":false,"errors":[{"errorCode":"PhoneAlreadyUse"}],"result":null}`,
+			Handler:             testHandler.jwtAuth(testHandler.updateUser),
+		},
+		{
+			Name:                "phone already use",
+			Url:                 "/api/v1/users/update",
+			Method:              http.MethodPost,
+			Body:                `{"name": "integration_tests","phone": "1111111111"}`,
+			AuthHeader:          testUserAccessToken,
+			RequestContentType:  contentTypeJSON,
+			ResponseContentType: contentTypeJSON,
+			ExpectedStatusCode:  http.StatusOK,
+			CheckBody:           true,
+			ExpectedBody:        `{"isSuccess":false,"errors":[{"errorCode":"NameAndPhoneAlreadyUse"}],"result":null}`,
+			Handler:             testHandler.jwtAuth(testHandler.updateUser),
+		},
+		{
+			Name:                "success empty body",
+			Url:                 "/api/v1/users/update",
+			Method:              http.MethodPost,
+			Body:                `{}`,
+			AuthHeader:          testUserAccessToken,
+			RequestContentType:  contentTypeJSON,
+			ResponseContentType: contentTypeJSON,
+			ExpectedStatusCode:  http.StatusOK,
+			Handler:             testHandler.jwtAuth(testHandler.updateUser),
+		},
+		{
+			Name:                "success name",
+			Url:                 "/api/v1/users/update",
+			Method:              http.MethodPost,
+			Body:                `{"name":"integration_tests_2"}`,
+			AuthHeader:          testUserAccessToken,
+			RequestContentType:  contentTypeJSON,
+			ResponseContentType: contentTypeJSON,
+			ExpectedStatusCode:  http.StatusOK,
+			Handler:             testHandler.jwtAuth(testHandler.updateUser),
+		},
+		{
+			Name:                "success phone",
+			Url:                 "/api/v1/users/update",
+			Method:              http.MethodPost,
+			Body:                `{"phone":"2222222222"}`,
+			AuthHeader:          testUserAccessToken,
+			RequestContentType:  contentTypeJSON,
+			ResponseContentType: contentTypeJSON,
+			ExpectedStatusCode:  http.StatusOK,
+			Handler:             testHandler.jwtAuth(testHandler.updateUser),
+		},
+		{
+			Name:                "success name and phone",
+			Url:                 "/api/v1/users/update",
+			Method:              http.MethodPost,
+			Body:                `{"name":"integration_tests_3","phone":"3333333333"}`,
+			AuthHeader:          testUserAccessToken,
+			RequestContentType:  contentTypeJSON,
+			ResponseContentType: contentTypeJSON,
+			ExpectedStatusCode:  http.StatusOK,
+			Handler:             testHandler.jwtAuth(testHandler.updateUser),
 		},
 	}
 

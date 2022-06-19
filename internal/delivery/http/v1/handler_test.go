@@ -26,6 +26,7 @@ type testData struct {
 	Url                 string
 	Method              string
 	Body                string
+	AuthHeader          string
 	RequestContentType  string
 	ResponseContentType string
 	ExpectedStatusCode  int
@@ -35,6 +36,13 @@ type testData struct {
 }
 
 var testHandler *Handler
+var testUserAccessToken string
+var testEventId string
+var testEventId10 string
+var testEventId25 string
+var testEventId50 string
+var testEventId75 string
+var testEventId100 string
 
 func TestHandler(t *testing.T) {
 	defer os.RemoveAll("logs")
@@ -67,11 +75,65 @@ func TestHandler(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	_, err = repositories.Users.CreateUser(context.Background(), domain.User{
+	userId, err := repositories.Users.CreateUser(context.Background(), domain.User{
 		Name:     "integration_tests",
 		Phone:    "1111111111",
 		Password: password,
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	testUserAccessToken, err = tokenManager.GetAccessToken(auth.TokenData{ID: userId, Name: "integration_tests"})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = repositories.Users.CreateUser(context.Background(), domain.User{
+		Name:     "integration_tests_events",
+		Phone:    "9090909090",
+		Password: password,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	testEventId, err = repositories.Events.CreateEvent(context.Background(), domain.Event{
+		OwnerID: "owner_id",
+		Name:    "integration_tests",
+		Address: "integration_tests",
+		State:   domain.EventStateOpened,
+		Coordinates: domain.Coordinates{
+			X: 99999,
+			Y: 99999,
+		},
+		Users: []domain.UserInfo{
+			{ID: "owner_id"},
+		},
+		Media: []domain.MediaInfo{
+			{
+				ID:          "media_id",
+				ContentType: "image/jpeg",
+			},
+		},
+		ChatMessages: []domain.ChatMessage{
+			{
+				UserID:   "test_id_1",
+				UserName: "test_events_1",
+				Message:  "test message",
+			},
+			{
+				UserID:   "test_id_2",
+				UserName: "test_events_2",
+				Message:  "another message",
+			},
+		},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = initEventsForRangeTest(repositories.Events)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -87,12 +149,16 @@ func TestHandler(t *testing.T) {
 	}
 
 	testHandler = NewHandler(appLogger, services, tokenManager)
-	t.Run("test users", TestUsers)
+	t.Run("users", TestUsers)
+	t.Run("events", TestEvents)
 }
 
 func testHandlerMethod(testData testData, t *testing.T) {
 	request := httptest.NewRequest(testData.Method, testData.Url, bytes.NewBuffer([]byte(testData.Body)))
 	request.Header.Set("Content-Type", testData.RequestContentType)
+	if testData.AuthHeader != "" {
+		request.Header.Set("Authorization", "Bearer "+testData.AuthHeader)
+	}
 	recorder := httptest.NewRecorder()
 	testData.Handler.ServeHTTP(recorder, request)
 	response := recorder.Result()
@@ -117,4 +183,94 @@ func testHandlerMethod(testData testData, t *testing.T) {
 			t.Errorf("Incorrect response body\nExpected body: %s\nActual body: %s", testData.ExpectedBody, result)
 		}
 	}
+}
+
+func initEventsForRangeTest(events repository.Events) error {
+	id, err := events.CreateEvent(context.Background(), domain.Event{
+		OwnerID: "owner_id_range_1",
+		Name:    "integration_tests_range_1",
+		Address: "integration_tests_range_1",
+		State:   domain.EventStateOpened,
+		Coordinates: domain.Coordinates{
+			X: 10,
+			Y: 10,
+		},
+		Users:        []domain.UserInfo{},
+		Media:        []domain.MediaInfo{},
+		ChatMessages: []domain.ChatMessage{},
+	})
+	if err != nil {
+		return err
+	}
+	testEventId10 = id
+
+	testEventId25, err = events.CreateEvent(context.Background(), domain.Event{
+		OwnerID: "owner_id_range_2",
+		Name:    "integration_tests_range_2",
+		Address: "integration_tests_range_2",
+		State:   domain.EventStateOpened,
+		Coordinates: domain.Coordinates{
+			X: 25,
+			Y: 25,
+		},
+		Users:        []domain.UserInfo{},
+		Media:        []domain.MediaInfo{},
+		ChatMessages: []domain.ChatMessage{},
+	})
+	if err != nil {
+		return err
+	}
+
+	testEventId50, err = events.CreateEvent(context.Background(), domain.Event{
+		OwnerID: "owner_id_range_3",
+		Name:    "integration_tests_range_3",
+		Address: "integration_tests_range_3",
+		State:   domain.EventStateOpened,
+		Coordinates: domain.Coordinates{
+			X: 50,
+			Y: 50,
+		},
+		Users:        []domain.UserInfo{},
+		Media:        []domain.MediaInfo{},
+		ChatMessages: []domain.ChatMessage{},
+	})
+	if err != nil {
+		return err
+	}
+
+	testEventId75, err = events.CreateEvent(context.Background(), domain.Event{
+		OwnerID: "owner_id_range_4",
+		Name:    "integration_tests_range_4",
+		Address: "integration_tests_range_4",
+		State:   domain.EventStateOpened,
+		Coordinates: domain.Coordinates{
+			X: 75,
+			Y: 75,
+		},
+		Users:        []domain.UserInfo{},
+		Media:        []domain.MediaInfo{},
+		ChatMessages: []domain.ChatMessage{},
+	})
+	if err != nil {
+		return err
+	}
+
+	testEventId100, err = events.CreateEvent(context.Background(), domain.Event{
+		OwnerID: "owner_id_range_5",
+		Name:    "integration_tests_range_5",
+		Address: "integration_tests_range_5",
+		State:   domain.EventStateOpened,
+		Coordinates: domain.Coordinates{
+			X: 100,
+			Y: 100,
+		},
+		Users:        []domain.UserInfo{},
+		Media:        []domain.MediaInfo{},
+		ChatMessages: []domain.ChatMessage{},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

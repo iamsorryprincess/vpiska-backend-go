@@ -1,7 +1,7 @@
 swag:
 	swag init -g internal/app/app.go
 
-integrationtestdb:
+infrastructure:
 	docker run --rm -d  -p 27017:27017/tcp mongo:4.4.10
 
 tests:

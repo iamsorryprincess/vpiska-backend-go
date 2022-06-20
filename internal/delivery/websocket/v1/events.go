@@ -34,7 +34,7 @@ func (h *Handler) upgradeEventConnection(writer http.ResponseWriter, request *ht
 	ch := make(chan []byte)
 	sub := newSubscriber(ch)
 	h.publisher.Subscribe(eventId, sub)
-	websocketContext := &readContext{context: newSocketContext(request.Context()), conn: conn, subscriber: sub, userData: userInfo}
+	websocketContext := &readContext{context: newSocketContext(request.Context()), conn: conn, subscriber: sub, userData: userInfo, logger: h.logger}
 
 	go readMessages(websocketContext, h.eventHandler, h.eventCloseHandler)
 	go writeMessages(h.pingPeriod, conn, ch)

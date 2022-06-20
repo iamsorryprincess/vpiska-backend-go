@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/service"
 	"github.com/iamsorryprincess/vpiska-backend-go/pkg/auth"
+	"github.com/iamsorryprincess/vpiska-backend-go/pkg/logger"
 )
 
 const idRegexp = `^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`
@@ -30,19 +31,6 @@ var upgrader = websocket.Upgrader{
 }
 
 func (h *Handler) upgradeConnection(writer http.ResponseWriter, request *http.Request) (userData, *websocket.Conn, error) {
-	if request.Method != http.MethodGet {
-		writer.WriteHeader(http.StatusMethodNotAllowed)
-		return userData{}, nil, errors.New("method not allowed")
-	}
-
-	conn, err := upgrader.Upgrade(writer, request, nil)
-
-	if err != nil {
-		h.logger.LogError(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return userData{}, nil, err
-	}
-
 	paramToken := request.URL.Query().Get("accessToken")
 
 	if paramToken == "" {
@@ -76,6 +64,13 @@ func (h *Handler) upgradeConnection(writer http.ResponseWriter, request *http.Re
 		return userData{}, nil, errors.New("invalid id")
 	}
 
+	conn, err := upgrader.Upgrade(writer, request, nil)
+
+	if err != nil {
+		h.logger.LogError(err)
+		return userData{}, nil, err
+	}
+
 	return userData{
 		UserID:      token.ID,
 		UserName:    token.Name,
@@ -88,12 +83,23 @@ type readContext struct {
 	conn       *websocket.Conn
 	subscriber service.Subscriber
 	userData   userData
+	logger     logger.Logger
 }
 
 func readMessages(context *readContext,
 	messageHandler func(ctx context.Context, userData userData, body []byte),
 	closeHandler func(ctx context.Context, userData userData, subscriber service.Subscriber)) {
-	defer closeHandler(context.context, context.userData, context.subscriber)
+	defer func() {
+		if r := recover(); r != nil {
+			handlePanic(r, context.logger, context.conn)
+		}
+		defer func() {
+			if r := recover(); r != nil {
+				handlePanic(r, context.logger, context.conn)
+			}
+		}()
+		closeHandler(context.context, context.userData, context.subscriber)
+	}()
 	for {
 		messageType, data, err := context.conn.ReadMessage()
 
@@ -152,6 +158,28 @@ func writeMessages(pingPeriod time.Duration, conn *websocket.Conn, ch <-chan []b
 			}
 		}
 	}
+}
+
+func handlePanic(r any, logger logger.Logger, conn *websocket.Conn) {
+	var err error
+
+	switch t := r.(type) {
+	case error:
+		err = t
+		break
+	case string:
+		err = errors.New(t)
+		break
+	default:
+		err = errors.New("unknown error")
+		break
+	}
+
+	if err != nil {
+		logger.LogError(err)
+	}
+
+	conn.Close()
 }
 
 func validateId(id string) (bool, error) {

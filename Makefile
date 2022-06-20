@@ -1,3 +1,6 @@
+lint:
+	go vet ./...
+
 swag:
 	swag init -g internal/app/app.go
 

@@ -38,21 +38,21 @@ func Run() {
 	}
 
 	defer logFile.Close()
-	configuration, err := config.Parse("configs/config.yml")
+	configuration, err := config.Parse()
 	if err != nil {
 		appLogger.LogError(err)
 		return
 	}
 
-	repositories, _, err := repository.NewRepositories(configuration.Database.ConnectionString, configuration.Database.DbName)
+	repositories, _, err := repository.NewRepositories(configuration.DbConnection, configuration.DbName)
 	if err != nil {
 		appLogger.LogError(err)
 		return
 	}
 
 	jwtDuration := time.Hour * 24 * 3
-	jwtTokenManager := auth.NewJwtManager(configuration.JWT.Key, configuration.JWT.Issuer, configuration.JWT.Audience, jwtDuration)
-	passwordManager, err := hash.NewPasswordHashManager(configuration.Hash.Key)
+	jwtTokenManager := auth.NewJwtManager(configuration.JWTKey, configuration.JWTIssuer, configuration.JWTAudience, jwtDuration)
+	passwordManager, err := hash.NewPasswordHashManager(configuration.HashKey)
 	if err != nil {
 		appLogger.LogError(err)
 		return
@@ -70,8 +70,8 @@ func Run() {
 		return
 	}
 
-	handler := appHttp.NewHandler(services, appLogger, jwtTokenManager, configuration.Logging.TraceRequestsEnable)
-	httpServer := server.NewServer(configuration.Server.Port, handler)
+	handler := appHttp.NewHandler(services, appLogger, jwtTokenManager, configuration.LoggingTraceRequests)
+	httpServer := server.NewHttpServer(configuration.ServerPort, handler)
 
 	go func() {
 		if err = httpServer.Run(); err != nil && !errors.Is(err, http.ErrServerClosed) {

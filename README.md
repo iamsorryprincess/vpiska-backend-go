@@ -3,6 +3,22 @@
 ### swagger
 https://vp1ska.ru/swagger/index.html
 ____
+### configuration
+**Переменные окружения**:</br>
+SERVER_PORT - порт</br>
+DB_CONNECTION - строка подключения к бд</br>
+DB_NAME - имя бд</br>
+JWT_KEY - ключ шифрования jwt токена</br>
+JWT_ISSUER - издатель jwt токена</br>
+JWT_AUDIENCE - клиент jwt токена</br>
+JWT_LIFETIME_DAYS - кол-во дней через которое jwt токен становится невалидным</br>
+HASH_KEY - ключ хэширования для паролей пользователей</br>
+LOGGING_TRACE_REQUESTS - булевый флаг, указывающий логировать ли http запросы и ответы</br>
+
+Инфраструктуру для дебага можно поднять в докере командой make infrastructure</br>
+Собрать сервис в образ докера командой make build</br>
+Поднять сервис вместе со всей необходимой инфраструктурой make run</br>
+____
 
 ## WebSocket эвента
 ____

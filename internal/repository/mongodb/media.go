@@ -1,4 +1,4 @@
-package repository
+package mongodb
 
 import (
 	"context"
@@ -10,17 +10,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type mediaRepository struct {
+type Media struct {
 	db *mongo.Collection
 }
 
-func newMongoMedia(db *mongo.Database, collectionName string) Media {
-	return &mediaRepository{
+func newMedia(db *mongo.Database, collectionName string) *Media {
+	return &Media{
 		db: db.Collection(collectionName),
 	}
 }
 
-func (r *mediaRepository) GetMedia(ctx context.Context, id string) (domain.Media, error) {
+func (r *Media) GetMedia(ctx context.Context, id string) (domain.Media, error) {
 	filter := bson.D{{Key: "_id", Value: id}}
 	media := domain.Media{}
 
@@ -34,7 +34,7 @@ func (r *mediaRepository) GetMedia(ctx context.Context, id string) (domain.Media
 	return media, nil
 }
 
-func (r *mediaRepository) CreateMedia(ctx context.Context, media domain.Media) (string, error) {
+func (r *Media) CreateMedia(ctx context.Context, media domain.Media) (string, error) {
 	media.ID = uuid.New().String()
 	_, err := r.db.InsertOne(ctx, media)
 
@@ -45,7 +45,7 @@ func (r *mediaRepository) CreateMedia(ctx context.Context, media domain.Media) (
 	return media.ID, nil
 }
 
-func (r *mediaRepository) UpdateMedia(ctx context.Context, media domain.Media) error {
+func (r *Media) UpdateMedia(ctx context.Context, media domain.Media) error {
 	filter := bson.D{{Key: "_id", Value: media.ID}}
 	update := bson.D{{Key: "$set", Value: bson.D{
 		{Key: "name", Value: media.Name},
@@ -66,7 +66,7 @@ func (r *mediaRepository) UpdateMedia(ctx context.Context, media domain.Media) e
 	return nil
 }
 
-func (r *mediaRepository) DeleteMedia(ctx context.Context, id string) error {
+func (r *Media) DeleteMedia(ctx context.Context, id string) error {
 	find := bson.D{{Key: "_id", Value: id}}
 	result, err := r.db.DeleteOne(ctx, find)
 

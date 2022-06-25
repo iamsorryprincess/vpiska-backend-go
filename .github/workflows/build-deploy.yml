@@ -10,6 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: build
-        run: docker-compose build api
+        run: docker-compose -f deploy/docker-compose.yml build api
       - name: deploy
         run: docker service update --force 4iy69jbyylku

@@ -3,6 +3,7 @@ module github.com/iamsorryprincess/vpiska-backend-go
 go 1.18
 
 require (
+	github.com/caarlos0/env/v6 v6.9.3
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
@@ -10,7 +11,6 @@ require (
 	github.com/swaggo/http-swagger v1.2.8
 	github.com/swaggo/swag v1.8.1
 	go.mongodb.org/mongo-driver v1.9.0
-	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
@@ -42,5 +42,6 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.10 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

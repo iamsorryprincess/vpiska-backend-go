@@ -53,19 +53,22 @@ func TestHandler(t *testing.T) {
 	}
 
 	defer logFile.Close()
-	configuration, err := config.Parse("../../../../configs/test.yml")
+
+	configuration, err := config.Parse()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tokenManager := auth.NewJwtManager(configuration.JWT.Key, configuration.JWT.Issuer, configuration.JWT.Audience, time.Minute*5)
-	repositories, cleaner, err := repository.NewRepositories(configuration.Database.ConnectionString, configuration.Database.DbName)
+	configuration.ServerPort = 9090
+	configuration.DbName = "test"
+	tokenManager := auth.NewJwtManager(configuration.JWTKey, configuration.JWTIssuer, configuration.JWTAudience, time.Minute*5)
+	repositories, cleaner, err := repository.NewRepositories(configuration.DbConnection, configuration.DbName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer cleaner.Clean()
-	hashManager, err := hash.NewPasswordHashManager(configuration.Hash.Key)
+	hashManager, err := hash.NewPasswordHashManager(configuration.HashKey)
 	if err != nil {
 		log.Fatal(err)
 	}

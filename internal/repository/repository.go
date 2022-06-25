@@ -2,11 +2,9 @@ package repository
 
 import (
 	"context"
-	"time"
 
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository/mongo"
 )
 
 type Media interface {
@@ -54,28 +52,14 @@ type TestsCleaner interface {
 }
 
 func NewRepositories(connectionString string, dbName string) (*Repositories, TestsCleaner, error) {
-	client, err := mongo.NewClient(options.Client().ApplyURI(connectionString))
-
+	media, users, events, cleaner, err := mongo.NewRepositories(connectionString, dbName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err = client.Connect(ctx); err != nil {
-		return nil, nil, err
-	}
-
-	if err = client.Ping(context.Background(), nil); err != nil {
-		return nil, nil, err
-	}
-
-	db := client.Database(dbName)
-
 	return &Repositories{
-		Media:  newMongoMedia(db, "media"),
-		Users:  newMongoUsers(db, "users"),
-		Events: newMongoEvents(db, "events"),
-	}, newMongoTestsCleaner(db), nil
+		Media:  media,
+		Users:  users,
+		Events: events,
+	}, cleaner, nil
 }

@@ -6,12 +6,12 @@ import (
 	"net/http"
 )
 
-type Server struct {
+type HttpServer struct {
 	httpServer *http.Server
 }
 
-func NewServer(port int, handler http.Handler) *Server {
-	return &Server{
+func NewHttpServer(port int, handler http.Handler) *HttpServer {
+	return &HttpServer{
 		httpServer: &http.Server{
 			Addr:    fmt.Sprintf(":%d", port),
 			Handler: handler,
@@ -19,10 +19,10 @@ func NewServer(port int, handler http.Handler) *Server {
 	}
 }
 
-func (s *Server) Run() error {
+func (s *HttpServer) Run() error {
 	return s.httpServer.ListenAndServe()
 }
 
-func (s *Server) Stop(ctx context.Context) error {
+func (s *HttpServer) Stop(ctx context.Context) error {
 	return s.httpServer.Shutdown(ctx)
 }

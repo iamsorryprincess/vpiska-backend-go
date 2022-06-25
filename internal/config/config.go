@@ -1,140 +1,28 @@
 package config
 
 import (
-	"errors"
-	"os"
-	"strconv"
-	"strings"
-
-	"gopkg.in/yaml.v2"
+	"github.com/caarlos0/env/v6"
 )
 
 type Configuration struct {
-	Server struct {
-		Port int `yaml:"port"`
-	} `yaml:"server"`
-	Database struct {
-		ConnectionString string `yaml:"connectionString"`
-		DbName           string `yaml:"dbName"`
-	} `yaml:"database"`
-	JWT struct {
-		Key          string `yaml:"key"`
-		Issuer       string `yaml:"issuer"`
-		Audience     string `yaml:"audience"`
-		LifetimeDays int    `yaml:"lifetimeDays"`
-	} `yaml:"jwt"`
-	Hash struct {
-		Key string `yaml:"key"`
-	} `yaml:"hash"`
-	Logging struct {
-		TraceRequestsEnable bool `yaml:"traceRequestsEnable"`
-	} `yaml:"logging"`
+	ServerPort           int    `env:"SERVER_PORT" envDefault:"5000"`
+	DbConnection         string `env:"DB_CONNECTION" envDefault:"mongodb://localhost:27017"`
+	DbName               string `env:"DB_NAME" envDefault:"vpiska"`
+	JWTKey               string `env:"JWT_KEY" envDefault:"vpiska_secretkey!123"`
+	JWTIssuer            string `env:"JWT_ISSUER" envDefault:"VpiskaServer"`
+	JWTAudience          string `env:"JWT_AUDIENCE" envDefault:"VpiskaClient"`
+	JWTLifeTimeDays      int    `env:"JWT_LIFETIME_DAYS" envDefault:"3"`
+	HashKey              string `env:"HASH_KEY" envDefault:"fbac497e4b44564f831f78d539b81a0c"`
+	LoggingTraceRequests bool   `env:"LOGGING_TRACE_REQUESTS" envDefault:"false"`
 }
 
-func Parse(configPath string) (*Configuration, error) {
-	configWay := os.Getenv("CONFIG")
-	switch configWay {
-	case "env":
-		return parseFromENV()
-	default:
-		return parseFromFile(configPath)
-	}
-}
+func Parse() (*Configuration, error) {
+	configuration := &Configuration{}
 
-func parseFromFile(configPath string) (*Configuration, error) {
-	f, openFileErr := os.Open(configPath)
-
-	if openFileErr != nil {
-		return nil, openFileErr
-	}
-	defer f.Close()
-
-	conf := &Configuration{}
-	decoder := yaml.NewDecoder(f)
-	decodeErr := decoder.Decode(conf)
-
-	if decodeErr != nil {
-		return nil, decodeErr
-	}
-
-	return conf, nil
-}
-
-func parseFromENV() (*Configuration, error) {
-	var validationErrors []string
-
-	port := getEnv("SERVER_PORT", validationErrors)
-	dbConnectionString := getEnv("DB_CONNECTION", validationErrors)
-	dbName := getEnv("DB_NAME", validationErrors)
-	jwtKey := getEnv("JWT_KEY", validationErrors)
-	jwtIssuer := getEnv("JWT_ISSUER", validationErrors)
-	jwtAudience := getEnv("JWT_AUDIENCE", validationErrors)
-	jwtLifetimeDays := getEnv("JWT_LIFETIME_DAYS", validationErrors)
-	hashKey := getEnv("HASH_KEY", validationErrors)
-
-	if len(validationErrors) > 0 {
-		return nil, errors.New(strings.Join(validationErrors, ","))
-	}
-
-	portInt, err := strconv.Atoi(port)
+	err := env.Parse(configuration)
 	if err != nil {
 		return nil, err
 	}
 
-	jwtLifetimeDaysInt, err := strconv.Atoi(jwtLifetimeDays)
-	if err != nil {
-		return nil, err
-	}
-
-	loggingTraceRequests := false
-	traceRequests := os.Getenv("LOGGING_TRACE_REQUESTS")
-	if traceRequests != "" {
-		loggingTraceRequests, err = strconv.ParseBool(traceRequests)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	conf := &Configuration{}
-	conf.Server = struct {
-		Port int `yaml:"port"`
-	}(struct{ Port int }{Port: portInt})
-
-	conf.Database = struct {
-		ConnectionString string `yaml:"connectionString"`
-		DbName           string `yaml:"dbName"`
-	}(struct {
-		ConnectionString string
-		DbName           string
-	}{ConnectionString: dbConnectionString, DbName: dbName})
-
-	conf.JWT = struct {
-		Key          string `yaml:"key"`
-		Issuer       string `yaml:"issuer"`
-		Audience     string `yaml:"audience"`
-		LifetimeDays int    `yaml:"lifetimeDays"`
-	}(struct {
-		Key          string
-		Issuer       string
-		Audience     string
-		LifetimeDays int
-	}{Key: jwtKey, Issuer: jwtIssuer, Audience: jwtAudience, LifetimeDays: jwtLifetimeDaysInt})
-
-	conf.Hash = struct {
-		Key string `yaml:"key"`
-	}(struct{ Key string }{Key: hashKey})
-
-	conf.Logging = struct {
-		TraceRequestsEnable bool `yaml:"traceRequestsEnable"`
-	}(struct{ TraceRequestsEnable bool }{TraceRequestsEnable: loggingTraceRequests})
-
-	return conf, nil
-}
-
-func getEnv(envName string, validationErrors []string) string {
-	envVar := os.Getenv(envName)
-	if envVar == "" {
-		validationErrors = append(validationErrors, "env variable "+envVar+" is not set")
-	}
-	return envVar
+	return configuration, err
 }

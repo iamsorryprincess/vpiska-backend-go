@@ -1,4 +1,4 @@
-package repository
+package mongo
 
 import (
 	"context"
@@ -10,17 +10,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type userRepository struct {
+type Users struct {
 	db *mongo.Collection
 }
 
-func newMongoUsers(db *mongo.Database, collectionName string) Users {
-	return &userRepository{
+func newUsers(db *mongo.Database, collectionName string) *Users {
+	return &Users{
 		db: db.Collection(collectionName),
 	}
 }
 
-func (r *userRepository) GetNamesCount(ctx context.Context, name string) (int64, error) {
+func (r *Users) GetNamesCount(ctx context.Context, name string) (int64, error) {
 	filter := bson.D{{Key: "name", Value: name}}
 	count, err := r.db.CountDocuments(ctx, filter)
 
@@ -31,7 +31,7 @@ func (r *userRepository) GetNamesCount(ctx context.Context, name string) (int64,
 	return count, nil
 }
 
-func (r *userRepository) GetPhonesCount(ctx context.Context, phone string) (int64, error) {
+func (r *Users) GetPhonesCount(ctx context.Context, phone string) (int64, error) {
 	filter := bson.D{{Key: "phone", Value: phone}}
 	count, err := r.db.CountDocuments(ctx, filter)
 
@@ -42,7 +42,7 @@ func (r *userRepository) GetPhonesCount(ctx context.Context, phone string) (int6
 	return count, nil
 }
 
-func (r *userRepository) CreateUser(ctx context.Context, user domain.User) (string, error) {
+func (r *Users) CreateUser(ctx context.Context, user domain.User) (string, error) {
 	user.ID = uuid.New().String()
 	_, err := r.db.InsertOne(ctx, user)
 
@@ -53,7 +53,7 @@ func (r *userRepository) CreateUser(ctx context.Context, user domain.User) (stri
 	return user.ID, nil
 }
 
-func (r *userRepository) GetUserByID(ctx context.Context, id string) (domain.User, error) {
+func (r *Users) GetUserByID(ctx context.Context, id string) (domain.User, error) {
 	filter := bson.D{{Key: "_id", Value: id}}
 	model := domain.User{}
 
@@ -67,7 +67,7 @@ func (r *userRepository) GetUserByID(ctx context.Context, id string) (domain.Use
 	return model, nil
 }
 
-func (r *userRepository) GetUserByPhone(ctx context.Context, phone string) (domain.User, error) {
+func (r *Users) GetUserByPhone(ctx context.Context, phone string) (domain.User, error) {
 	filter := bson.D{{Key: "phone", Value: phone}}
 	model := domain.User{}
 
@@ -81,7 +81,7 @@ func (r *userRepository) GetUserByPhone(ctx context.Context, phone string) (doma
 	return model, nil
 }
 
-func (r *userRepository) ChangePassword(ctx context.Context, id string, password string) error {
+func (r *Users) ChangePassword(ctx context.Context, id string, password string) error {
 	filter := bson.D{{Key: "_id", Value: id}}
 	update := bson.D{{Key: "$set", Value: bson.D{{Key: "password", Value: password}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
@@ -97,7 +97,7 @@ func (r *userRepository) ChangePassword(ctx context.Context, id string, password
 	return nil
 }
 
-func (r *userRepository) SetImageId(ctx context.Context, userId string, imageId string) error {
+func (r *Users) SetImageId(ctx context.Context, userId string, imageId string) error {
 	filter := bson.D{{Key: "_id", Value: userId}}
 	update := bson.D{{Key: "$set", Value: bson.D{{Key: "image_id", Value: imageId}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
@@ -113,7 +113,7 @@ func (r *userRepository) SetImageId(ctx context.Context, userId string, imageId 
 	return nil
 }
 
-func (r *userRepository) UpdateName(ctx context.Context, userId string, name string) error {
+func (r *Users) UpdateName(ctx context.Context, userId string, name string) error {
 	filter := bson.D{{Key: "_id", Value: userId}}
 	update := bson.D{{Key: "$set", Value: bson.D{{Key: "name", Value: name}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
@@ -129,7 +129,7 @@ func (r *userRepository) UpdateName(ctx context.Context, userId string, name str
 	return nil
 }
 
-func (r *userRepository) UpdatePhone(ctx context.Context, userId string, phone string) error {
+func (r *Users) UpdatePhone(ctx context.Context, userId string, phone string) error {
 	filter := bson.D{{Key: "_id", Value: userId}}
 	update := bson.D{{Key: "$set", Value: bson.D{{Key: "phone", Value: phone}}}}
 	result, err := r.db.UpdateOne(ctx, filter, update)
@@ -145,7 +145,7 @@ func (r *userRepository) UpdatePhone(ctx context.Context, userId string, phone s
 	return nil
 }
 
-func (r *userRepository) UpdateNameAndPhone(ctx context.Context, userId string, name string, phone string) error {
+func (r *Users) UpdateNameAndPhone(ctx context.Context, userId string, name string, phone string) error {
 	filter := bson.D{{Key: "_id", Value: userId}}
 	update := bson.D{{Key: "$set", Value: bson.D{
 		{Key: "name", Value: name},

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/iamsorryprincess/vpiska-backend-go/internal/domain"
-	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository/mongodb"
+	"github.com/iamsorryprincess/vpiska-backend-go/internal/repository/mongo"
 )
 
 type Media interface {
@@ -52,14 +52,14 @@ type TestsCleaner interface {
 }
 
 func NewRepositories(connectionString string, dbName string) (*Repositories, TestsCleaner, error) {
-	repositories, cleaner, err := mongodb.NewRepositories(connectionString, dbName)
+	media, users, events, cleaner, err := mongo.NewRepositories(connectionString, dbName)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	return &Repositories{
-		Media:  repositories.Media,
-		Users:  repositories.Users,
-		Events: repositories.Events,
+		Media:  media,
+		Users:  users,
+		Events: events,
 	}, cleaner, nil
 }

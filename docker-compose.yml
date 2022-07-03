@@ -3,9 +3,6 @@ version: '3.4'
 services:
   mongo:
     image: mongo:4.4.10
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=kekit*
-      - MONGO_INITDB_ROOT_PASSWORD=qweasd123*
     ports:
       - "27017:27017"
     volumes:
@@ -15,7 +12,7 @@ services:
     image: api
     environment:
       - SERVER_PORT=5000
-      - DB_CONNECTION=mongodb://kekit*:qweasd123*@mongo:27017
+      - DB_CONNECTION=mongodb://mongo:27017
       - DB_NAME=vpiska
       - JWT_KEY=vpiska_secretkey!123
       - JWT_ISSUER=VpiskaServer
